@@ -1,13 +1,13 @@
 from torch.nn import Linear, Tanh, LSTM, Embedding
 from torch.optim import SGD, Adam
-from pytorch_lightning import LightningModule, EvalResult, TrainResult
+# from pytorch_lightning import LightningModule, EvalResult, TrainResult
+import pytorch_lightning as pl
 from torchvision.models import resnet18
 from loss_func.simclr import SimCLR
 import torch
 from torchvision import transforms 
 
-
-class JeopardyModel(LightningModule):
+class JeopardyModel(pl.LightningModule):
     def __init__(self, vocab_sz, im_vec_dim=128, ans_dim=128, question_dim=256, n_hidden=100, n_layers=1):
       # possible next step - use auto scaling of batch size on GPU
       super().__init__()
@@ -16,7 +16,7 @@ class JeopardyModel(LightningModule):
       self.question_dim = question_dim
       self.n_hidden = n_hidden
       self.n_layers = n_layers # in case we want multilayer RNN
-      
+
       self.i_h = Embedding(vocab_sz, n_hidden, padding_idx=0)  
       self.h_o = Linear(n_hidden, question_dim)
       self.h = None 
@@ -49,21 +49,17 @@ class JeopardyModel(LightningModule):
         
     def training_step(self, batch, batch_idx):
       loss = self.shared_step(batch)
-      result = TrainResult(loss)
+      result = pl.TrainResult(loss)
       result.log_dict({'train_loss': loss}, prog_bar=True)
+      self.log("train_loss", loss, prog_bar=True)
       return result
 
     def validation_step(self, batch, batch_idx):
       # what hyperparams am I varying?
       loss = self.shared_step(batch)
-      result = EvalResult(checkpoint_on=loss, early_stop_on=loss)
+      result = pl.EvalResult(checkpoint_on=loss, early_stop_on=loss)
       result.log_dict({'val_loss': loss}, prog_bar=True)
-      return result
-
-    def test_step(self, batch, batch_idx):
-      loss = self.shared_step(batch)
-      result = EvalResult()
-      result.log_dict({'test_loss': loss}, prog_bar=True)
+      self.log("val_loss", loss, prog_bar=True)
       return result
 
     def shared_step(self, batch):

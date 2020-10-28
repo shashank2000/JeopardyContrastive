@@ -23,27 +23,19 @@ class VQADataModule(LightningDataModule):
     # copy and then unarchive instead?
     self.coco_loc = "../../datasets/train2014"
     # do something about self.dims?
-    self.dataset = JeopardyDataset(self.questions_file, self.answers_file, self.coco_loc, self.transform)
-
+    self.train_dataset = JeopardyDataset(self.questions_file, self.answers_file, self.coco_loc, self.transform, train=True)
+    self.test_dataset = JeopardyDataset(self.questions_file, self.answers_file, self.coco_loc, self.transform, 
+        word2idx=self.train_dataset.word2idx, train=False)
+    
     self.vl = self.get_vocab_length()
-
-  def setup(self, stage=None):  
-    dataset_size = len(self.dataset)
-    indices = list(range(dataset_size))
-    split = self.dataset.get_split_index()
-    train_indices, val_indices = indices[:split], indices[split:]
-
-    # Creating PT data samplers and loaders:
-    self.train_sampler = SubsetRandomSampler(train_indices)
-    self.val_sampler = SubsetRandomSampler(val_indices)
     
   def train_dataloader(self):
-      return DataLoader(self.dataset, batch_size=self.batch_size, sampler=self.train_sampler,
+      return DataLoader(self.train_dataset, batch_size=self.batch_size,
                         num_workers=4, pin_memory=True, drop_last=True)
 
   def val_dataloader(self):
-      return DataLoader(self.dataset, batch_size=self.batch_size, sampler=self.val_sampler,
+      return DataLoader(self.test_dataset, batch_size=self.batch_size,
                         num_workers=4, pin_memory=True, drop_last=True)
 
   def get_vocab_length(self):
-    return self.dataset.vocabulary_length()
+    return self.train_dataset.vocabulary_length()

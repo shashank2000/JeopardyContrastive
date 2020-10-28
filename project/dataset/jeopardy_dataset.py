@@ -12,7 +12,7 @@ PAD_TOKEN = "<pad>"
 UNK_TOKEN = "<unk>"
 
 class JeopardyDataset(Dataset):
-    def __init__(self, questions_file, answers_file, images_dir, transform, q_len=8, ans_len=2, test_split=0.2):
+    def __init__(self, questions_file, answers_file, images_dir, transform, word2idx=None, train=True, q_len=8, ans_len=2, test_split=0.2):
         """
         Args:
             questions_file (string): Path to the json file with questions.
@@ -20,7 +20,8 @@ class JeopardyDataset(Dataset):
             images_dir (string): Directory with all the images.
             transform (callable, optional): Optional transform to be applied
                 on a sample.
-
+            word2idx: word2idx[word] = index, constructed on the train set only, must be passed in for the test set.  
+                
         Example call:
             test_ds = JeopardyDataset("v2_OpenEnded_mscoco_train2014_questions.json", "v2_mscoco_train2014_annotations.json", "images")
 
@@ -29,6 +30,9 @@ class JeopardyDataset(Dataset):
         # initializing the lengths of our questions and answers
         self.q_len = q_len
         self.ans_len = ans_len
+
+        # return test or train set?
+        self.train = train
 
         q_f = open(questions_file, 'r')
         a_f = open(answers_file, 'r')
@@ -42,9 +46,12 @@ class JeopardyDataset(Dataset):
         self.question_to_answer = self._find_answers()
         self.mega_dict = {} # this will store our indices
         self.numerical = {}
-        # vocab made only from the train set
-        vocab = self._make_vocab(test_split)
-        word2idx = self._build_word2idx(vocab)
+        if train:
+            # vocab made only from the train set
+            self.vocab = self._make_vocab(test_split)
+            self.word2idx = self._build_word2idx(self.vocab)
+        else:
+            self.word2idx = word2idx
 
         index = 0
 
@@ -63,17 +70,18 @@ class JeopardyDataset(Dataset):
             
             # not all questions have 1-word answers, and for some reason, the dataset does not seem to have a corresponding image for each question
             if question['question_id'] in self.question_to_answer and question["image_id"] in self.image_id_to_filename:
-                self.numerical[question["question_id"]] = [word2idx[word] if word in word2idx else -1 for word in sentence_array]
+                self.numerical[question["question_id"]] = [self.word2idx[word] if word in self.word2idx else -1 for word in sentence_array]
                 answer_word = self.question_to_answer[question["question_id"]]
-                if answer_word not in word2idx:
+                if answer_word not in self.word2idx:
                     answer_word = UNK_TOKEN
-                answer_word = word2idx[answer_word]
+                answer_word = self.word2idx[answer_word]
                 self.mega_dict[index] = question, self.image_id_to_filename[question["image_id"]], answer_word
                 index += 1
                 if not self.test_split_start and i >= split_index:
                     self.test_split_start = index
 
         self.index = index
+        
 
     def _build_word2idx(self, vocab):
         '''
@@ -96,6 +104,7 @@ class JeopardyDataset(Dataset):
         vocab.extend(nltk.word_tokenize(question_text))
         # adding special tokens to the vocab
         vocab = [PAD_TOKEN, END_TOKEN, START_TOKEN, UNK_TOKEN] + vocab
+        vocab = set(vocab)
         self.vocab_length = len(vocab)
         return vocab
         
@@ -144,6 +153,7 @@ class JeopardyDataset(Dataset):
         return id_to_filename
 
     def vocabulary_length(self):
+        # train has same vocab length as test set
         return self.vocab_length
 
     def get_split_index(self):
@@ -156,6 +166,11 @@ class JeopardyDataset(Dataset):
         return self.index
 
     def __getitem__(self, idx):
+        if self.train and idx >= self.test_split_start:
+            # invalid index
+            return 
+        elif not self.train and idx + self.test_split_start < self.__len__():
+            idx = idx + self.test_split_start
         question, image, answer = self.mega_dict[idx]
         path = os.path.join(self.images_dir, self.image_id_to_filename[question["image_id"]])
         img = self.transform(Image.open(path).convert('RGB'))

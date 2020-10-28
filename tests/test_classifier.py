@@ -3,6 +3,7 @@ from pytorch_lightning import Trainer, seed_everything
 from project.lit_classifier_main import LitClassifier
 
 
+# TODO: for downstream task testing
 def test_lit_classifier():
     seed_everything(1234)
 

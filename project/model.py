@@ -1,66 +1,65 @@
 from torch.nn import Linear, Tanh, LSTM, Embedding
-from torch.optim import SGD
-import pytorch_lightning as pl 
+from torch.optim import SGD, Adam
+# from pytorch_lightning import LightningModule, EvalResult, TrainResult
+import pytorch_lightning as pl
 from torchvision.models import resnet18
 from loss_func.simclr import SimCLR
 import torch
+from torchvision import transforms 
 
 class JeopardyModel(pl.LightningModule):
-    def __init__(self, vocab_sz, bs):
+    def __init__(self, vocab_sz, im_vec_dim=128, ans_dim=128, question_dim=256, n_hidden=100, n_layers=1):
+      # possible next step - use auto scaling of batch size on GPU
       super().__init__()
-      im_vec_dim = 128
-      ans_dim = 128
-      question_dim = 256
-      n_hidden = 100
-      n_layers = 1
-      
-      self.i_h = Embedding(vocab_sz, n_hidden)
-      self.rnn = LSTM(n_hidden, n_hidden)
+      self.im_vec_dim = im_vec_dim
+      self.ans_dim = ans_dim
+      self.question_dim = question_dim
+      self.n_hidden = n_hidden
+      self.n_layers = n_layers # in case we want multilayer RNN
+
+      self.i_h = Embedding(vocab_sz, n_hidden, padding_idx=0)  
       self.h_o = Linear(n_hidden, question_dim)
-      # make it None
-      self.h = None
+      self.h = None 
       self.ans_final = Linear(n_hidden, ans_dim)
+      if self.n_layers > 1:
+        self.rnn = LSTM(n_hidden, n_hidden, n_layers)
+      else:
+        self.rnn = LSTM(n_hidden, n_hidden)
 
-      # for images, we use resnet18 pretrained
-      self.image_feature_extractor = resnet18(pretrained=True, progress=True)
-      for p in self.image_feature_extractor.parameters():
-        p.requires_grad = False
-
+      # for images, we use resnet18, and modify the number of output classes
+      self.image_feature_extractor = resnet18(pretrained=False)
       self.image_feature_extractor.fc = Linear(512, im_vec_dim)
       
     def forward(self, x):
-      # check which layers are getting frozen and which are not
       return self.image_feature_extractor(x)
 
     def forward_question(self, x):
       # we have a question as input
       if not self.h:
-        self.h = torch.zeros(1, 16, 100, device=self.device), torch.zeros(1, 16, 100, device=self.device) # h0, c0
+        batch_size = x.shape[1]
+        self.h = torch.zeros(1, batch_size, self.n_hidden, device=self.device), torch.zeros(1, batch_size, self.n_hidden, device=self.device) # h0, c0
       res, h = self.rnn(self.i_h(x), self.h)
-      self.h = h[0], h[1] # both h_n and c_n are getting detached?
+      self.h = h[0].detach(), h[1].detach()
       return self.h_o(res)
 
     def forward_answer(self, x):
+      # just a linear layer over the embeddings to begin with
       x = self.i_h(x)
       return self.ans_final(x)
         
-
     def training_step(self, batch, batch_idx):
       loss = self.shared_step(batch)
       result = pl.TrainResult(loss)
       result.log_dict({'train_loss': loss}, prog_bar=True)
+      self.log("train_loss", loss, prog_bar=True)
       return result
 
     def validation_step(self, batch, batch_idx):
+      # what hyperparams am I varying?
       loss = self.shared_step(batch)
       result = pl.EvalResult(checkpoint_on=loss, early_stop_on=loss)
       result.log_dict({'val_loss': loss}, prog_bar=True)
-      return result
-
-    def test_step(self, batch, batch_idx):
-      loss = self.shared_step(batch)
-      result = pl.EvalResult()
-      result.log_dict({'test_loss': loss}, prog_bar=True)
+      self.log("val_loss", loss, prog_bar=True)
       return result
 
     def shared_step(self, batch):
@@ -74,7 +73,5 @@ class JeopardyModel(pl.LightningModule):
       loss = SimCLR(answer_image_vector, f_q).get_loss()
       return loss
 
-
     def configure_optimizers(self):
-      # will be taking outputs1, outputs2 as params where output 1 is the concat
-      return SGD(self.image_feature_extractor.fc.parameters(), lr=2e-2) # find out how to make this so that every thing is optimizable??
+      return Adam(self.parameters(), lr=2e-2)

@@ -2,3 +2,4 @@
 project/lightning_logs/
 project/wandb/
 env/
+**/mlruns/

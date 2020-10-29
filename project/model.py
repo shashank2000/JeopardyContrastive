@@ -8,9 +8,10 @@ import torch
 from torchvision import transforms 
 
 class JeopardyModel(pl.LightningModule):
-    def __init__(self, vocab_sz, im_vec_dim=128, ans_dim=128, question_dim=256, n_hidden=100, n_layers=1):
+    def __init__(self, vocab_sz, learning_rate=0.03, im_vec_dim=128, ans_dim=128, question_dim=256, n_hidden=100, n_layers=1):
       # possible next step - use auto scaling of batch size on GPU
       super().__init__()
+      self.learning_rate = learning_rate
       self.im_vec_dim = im_vec_dim
       self.ans_dim = ans_dim
       self.question_dim = question_dim
@@ -49,18 +50,14 @@ class JeopardyModel(pl.LightningModule):
         
     def training_step(self, batch, batch_idx):
       loss = self.shared_step(batch)
-      result = pl.TrainResult(loss)
-      result.log_dict({'train_loss': loss}, prog_bar=True)
       self.log("train_loss", loss, prog_bar=True)
-      return result
+      return loss 
 
     def validation_step(self, batch, batch_idx):
       # what hyperparams am I varying?
       loss = self.shared_step(batch)
-      result = pl.EvalResult(checkpoint_on=loss, early_stop_on=loss)
-      result.log_dict({'val_loss': loss}, prog_bar=True)
       self.log("val_loss", loss, prog_bar=True)
-      return result
+      return loss 
 
     def shared_step(self, batch):
       question, image, answer = batch
@@ -74,4 +71,4 @@ class JeopardyModel(pl.LightningModule):
       return loss
 
     def configure_optimizers(self):
-      return Adam(self.parameters(), lr=2e-2)
+      return SGD(self.parameters(), momentum=0.9, weight_decay=1e-4, lr=self.learning_rate)

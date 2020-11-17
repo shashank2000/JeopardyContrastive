@@ -1,8 +1,9 @@
 {
     "exp_base": "/mnt/fs5/shashank2000",
-    "exp_name": "jeopardy_contrastive_regular",
+    "exp_name": "jeopardy_contrastive_regular_with_random_transforms",
     "run_name": "test run 1",
     "downstream_task_config": "config/cifar10transfer.json",
+    "downstream_task2_config": "config/cocotransfer.json",
     "system": "regular-jeopardy",
     "cuda": true,
     "gpu_device": 8,
@@ -27,5 +28,5 @@
     "num_epochs": 200,
     "validate": true,
     "copy_checkpoint_freq": 5,
-    "continue_from_checkpoint": null
+    "continue_from_checkpoint": "/mnt/fs5/shashank2000/experiments/jeopardy_contrastive_regular_with_random_transforms/checkpoints/epoch=7.ckpt"
 }

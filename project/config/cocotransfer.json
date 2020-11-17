@@ -1,6 +1,6 @@
 {
     "exp_base": "/mnt/fs5/shashank2000",
-    "exp_name": "transfer_cifar10",
+    "exp_name": "coco_transfer",
     "cuda": true,
     "gpu_device": 0,
     "seed": 1337,
@@ -11,6 +11,6 @@
     "num_epochs": 10,
     "copy_checkpoint_freq": 5,
     "continue_from_checkpoint": null,
-    "dataset_type": "cifar10",
-    "num_classes": 10
+    "dataset_type": "coco",
+    "num_classes": 80
 }

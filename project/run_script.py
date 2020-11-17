@@ -5,24 +5,33 @@ import pytorch_lightning as pl
 from model import JeopardyModel
 from model_im_q_a import JeopardyModel2
 from data_module import VQADataModule
+from baseline_data_module import BaselineDataModule
+from baseline_simclr import UpperBoundModel
 import subprocess
 from PIL import ImageFile
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class RealTimeEvalCallback(pl.Callback):
-    def __init__(self, checkpoint_dir, downstream_task_config, vocab_sz, parent_config):
+    def __init__(self, checkpoint_dir, downstream_task_config, vocab_sz=100, parent_config=None, d2=None, mtype="regular"):
         self.checkpoint_dir = checkpoint_dir
         self.downstream_task_config = downstream_task_config
         self.vocab_sz = str(vocab_sz)
         self.parent_config = parent_config
+        self.downstream2=d2
+        self.mtype = mtype
 
     def on_validation_epoch_end(self, trainer, pl_module):
         cur = trainer.current_epoch
         if cur % 10 == 0 or cur == 1:
             cur_checkpoint = os.path.join(self.checkpoint_dir, "epoch="+str(cur)+".ckpt")
-            subprocess.Popen(["python", "test_representation.py", self.downstream_task_config, 
-            cur_checkpoint, self.vocab_sz, self.parent_config, "regular"])
+            commands = ["python", "test_representation.py", self.downstream_task_config, cur_checkpoint, self.vocab_sz, self.parent_config]
+            commands.extend([self.mtype, "--gpu-device", "0"])
+            subprocess.Popen(commands)
+            if self.downstream2:
+                # this only on COCO with Jeopardy Model, not CIFAR10 on baseline
+                commands = ["python", "test_representation.py", self.downstream_task_config, cur_checkpoint, self.vocab_sz, self.parent_config, self.mtype, "--gpu-device", "5"]
+                subprocess.Popen(commands)
 
 def run(config_path, gpu_device=None):
     config = process_config(config_path)
@@ -36,16 +45,21 @@ def run(config_path, gpu_device=None):
     )
     
     wandb_logger = pl.loggers.WandbLogger(name=config.run_name, project=config.exp_name)
-    dm = VQADataModule(batch_size=config.optim_params.batch_size) # not if we are running the downstream tasks
+    dm = BaselineDataModule(batch_size=config.optim_params.batch_size) if config.system == "coco-pretraining" else VQADataModule(batch_size=config.optim_params.batch_size)
     mp = config.model_params
     
     model = None
-    if config.system == "InverseJeopardy":
-        model = JeopardyModel2(dm.vl, mp.im_vec_dim, mp.ans_dim, mp.question_dim, mp.n_hidden, mp.n_layers, config.optim_params)
+    eval_realtime_callback = None
+    if config.system == "coco-pretraining":
+        model = UpperBoundModel(config)
+        eval_realtime_callback = RealTimeEvalCallback(checkpoint_dir=config.checkpoint_dir, downstream_task_config=config.downstream_task_config, parent_config=config_path, mtype="coco")
     else:
-        model = JeopardyModel(dm.vl, config)
-    
-    eval_realtime_callback = RealTimeEvalCallback(config.checkpoint_dir, config.downstream_task_config, dm.vl, config_path)
+        if config.system == "InverseJeopardy":
+            model = JeopardyModel2(dm.vl, mp.im_vec_dim, mp.ans_dim, mp.question_dim, mp.n_hidden, mp.n_layers, config.optim_params, mtype="inv")
+        else:  
+            model = JeopardyModel(dm.vl, config)
+        eval_realtime_callback = RealTimeEvalCallback(config.checkpoint_dir, config.downstream_task_config, dm.vl, config_path, d2=config.downstream_task2_config)
+
     trainer = pl.Trainer(
         default_root_dir=config.exp_dir,
         gpus=[gpu_device],

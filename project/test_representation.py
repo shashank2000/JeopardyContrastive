@@ -1,4 +1,4 @@
-from cifar_classifier import CIFAR10Classifier
+from image_classifier import SimpleClassifier
 from run_script import seed_everything
 import pytorch_lightning as pl 
 from utils.setup import process_config
@@ -17,7 +17,7 @@ def run(vocab_sz, checkpoint, config_path, parent_config=None, gpu_device=None, 
     )
     
     wandb_logger = pl.loggers.WandbLogger(name="testing " + checkpoint, config=config, project=config.exp_name)    
-    model = CIFAR10Classifier(vocab_sz, checkpoint, model_type, process_config(parent_config), config)
+    model = SimpleClassifier(checkpoint, model_type, process_config(parent_config), config, vocab_sz=vocab_sz)
     trainer = pl.Trainer(
         default_root_dir=config.exp_dir,
         gpus=[gpu_device],
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     parser.add_argument('vocab_size', type=int, default=20541)
     parser.add_argument('parent_config', type=str, default="config/jeopardy_model.json") # to pass in while loading model
     parser.add_argument('model_type', type=str, default="regular")
-    parser.add_argument('--gpu-device', type=int, default=None)
+    parser.add_argument('--gpu-device', type=int, default=0)
     args = parser.parse_args()
     run(
         vocab_sz=args.vocab_size, 

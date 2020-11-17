@@ -51,7 +51,7 @@ def _process_config(config_json, override_dotmap=None):
     config.log_dir = os.path.join(exp_dir, "logs/")
 
     # will not create if already existing
-    makedirs([config.checkpoint_dir, config.out_dir, config.log_dir])
+    makedirs([config.exp_dir, config.checkpoint_dir, config.out_dir, config.log_dir])
 
     # save config to experiment dir
     config_out = os.path.join(exp_dir, 'config.json')

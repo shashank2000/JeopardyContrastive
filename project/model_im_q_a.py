@@ -7,7 +7,7 @@ from loss_func.simclr import SimCLR
 import torch
 from torchvision import transforms 
 
-class JeopardyModel(pl.LightningModule):
+class JeopardyModel2(pl.LightningModule):
     def __init__(self, vocab_sz, config):
       # possible next step - use auto scaling of batch size on GPU
       super().__init__()
@@ -61,14 +61,15 @@ class JeopardyModel(pl.LightningModule):
       return loss 
 
     def shared_step(self, batch):
+      # we test a question-image vector instead - so not quite Jeopardy
       question, image, answer = batch
       question = torch.stack(question)
       f_q = self.forward_question(question)
       f_q = f_q.squeeze()[-1, :]
       f_a = self.forward_answer(answer)
       im_vector = self(image)
-      answer_image_vector = torch.cat((f_a, im_vector), 1)
-      loss = SimCLR(answer_image_vector, f_q).get_loss()
+      question_image_vector = torch.cat((f_q, im_vector), 1)
+      loss = SimCLR(question_image_vector, f_a).get_loss()
       return loss
 
     def configure_optimizers(self):

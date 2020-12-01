@@ -1,22 +1,27 @@
 # download the VQA questions and answers (annotations)
 import os
 from os import path as osp
-dir_raw = './testing/' # enter directory here
-dir_zip = osp.join(dir_raw, 'zip')
-os.system('mkdir -p '+dir_zip)
-dir_ann = osp.join(dir_raw, 'Research') # enter here
-os.system('mkdir -p '+dir_ann)
+dir_raw = '/data5/shashank2000/' # enter directory here
+dir_zip = osp.join(dir_raw, 'zipfiles')
+os.system('mkdir -p ' + dir_zip)
+dir_ann = osp.join(dir_raw, 'final_json')
+os.system('mkdir -p ' + dir_ann)
 
 os.system('wget https://s3.amazonaws.com/cvmlp/vqa/mscoco/vqa/v2_Questions_Train_mscoco.zip -P '+dir_zip)
 os.system('wget https://s3.amazonaws.com/cvmlp/vqa/mscoco/vqa/v2_Questions_Val_mscoco.zip -P '+dir_zip)
 os.system('wget https://s3.amazonaws.com/cvmlp/vqa/mscoco/vqa/v2_Questions_Test_mscoco.zip -P '+dir_zip)
 os.system('wget https://s3.amazonaws.com/cvmlp/vqa/mscoco/vqa/v2_Annotations_Train_mscoco.zip -P '+dir_zip)
 os.system('wget https://s3.amazonaws.com/cvmlp/vqa/mscoco/vqa/v2_Annotations_Val_mscoco.zip -P '+dir_zip)
+os.system('wget https://s3.amazonaws.com/cvmlp/vqa/mscoco/vqa/v2_Complementary_Pairs_Train_mscoco.zip -P '+dir_zip)
+os.system('wget https://s3.amazonaws.com/cvmlp/vqa/mscoco/vqa/v2_Complementary_Pairs_Val_mscoco.zip -P '+dir_zip)
+
 os.system('unzip '+osp.join(dir_zip, 'v2_Questions_Train_mscoco.zip')+' -d '+dir_ann)
 os.system('unzip '+osp.join(dir_zip, 'v2_Questions_Val_mscoco.zip')+' -d '+dir_ann)
 os.system('unzip '+osp.join(dir_zip, 'v2_Questions_Test_mscoco.zip')+' -d '+dir_ann)
 os.system('unzip '+osp.join(dir_zip, 'v2_Annotations_Train_mscoco.zip')+' -d '+dir_ann)
 os.system('unzip '+osp.join(dir_zip, 'v2_Annotations_Val_mscoco.zip')+' -d '+dir_ann)
+os.system('unzip '+osp.join(dir_zip, 'v2_Complementary_Pairs_Train_mscoco.zip')+' -d '+dir_ann)
+os.system('unzip '+osp.join(dir_zip, 'v2_Complementary_Pairs_Val_mscoco.zip')+' -d '+dir_ann)
 
 os.system('mv '+osp.join(dir_ann, 'v2_mscoco_train2014_annotations.json')+' '
                 +osp.join(dir_ann, 'mscoco_train2014_annotations.json'))

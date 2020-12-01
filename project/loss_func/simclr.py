@@ -12,9 +12,15 @@ class SimCLR(object):
         self.t = t
 
     def get_loss(self):
+        # sim(u,v) denotes the cosine similarity between the two vectors
+        # dot product of the two vectors
         witness_pos = torch.sum(self.outputs1 * self.outputs2, dim=1)
+        # concatenating the two
         outputs12 = torch.cat([self.outputs1, self.outputs2], dim=0)
-        witness_partition = self.outputs1 @ outputs12.T
+        # answer_image vector multiplied by the transpose of the concatenated vector
+        witness_partition = self.outputs1 @ outputs12.T 
         witness_partition = torch.logsumexp(witness_partition / self.t, dim=1)
-        loss = -torch.mean(witness_pos / self.t - witness_partition)
+        # final loss is computed across all positive pairs in a minibatch, and we take average
+        loss = -torch.mean(witness_pos / self.t - witness_partition) # sum of everything minus (i, i)
+        # returns mean value of each row of the input tensor
         return loss

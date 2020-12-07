@@ -13,26 +13,31 @@ from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class RealTimeEvalCallback(pl.Callback):
-    def __init__(self, checkpoint_dir, downstream_task_config, vocab_sz=100, parent_config=None, d2=None, mtype="regular"):
+    def __init__(self, checkpoint_dir, downstream_task_config, vocab_sz=100, parent_config=None, d2=None):
         self.checkpoint_dir = checkpoint_dir
         self.downstream_task_config = downstream_task_config
         self.vocab_sz = str(vocab_sz)
         self.parent_config = parent_config
         self.downstream2=d2
-        self.mtype = mtype
+        self.commands1 = lambda cur_checkpoint: ["python", "test_representation.py", self.downstream_task_config, cur_checkpoint, 
+                        self.vocab_sz, self.parent_config, "--gpu-device", "1"]
+        self.commands2 = lambda cur_checkpoint: ["python", "test_representation.py", self.downstream2, cur_checkpoint,
+                        self.vocab_sz, self.parent_config, "--gpu-device", "2"]    
 
-    def on_validation_epoch_end(self, trainer, pl_module):
+    def on_fit_end(self, trainer, pl_module):
         cur = trainer.current_epoch
-        if cur % 10 == 0 or cur == 1:
-            cur_checkpoint = os.path.join(self.checkpoint_dir, "epoch="+str(cur)+".ckpt")
-            commands = ["python", "test_representation.py", self.downstream_task_config, cur_checkpoint, self.vocab_sz, self.parent_config]
-            commands.extend([self.mtype, "--gpu-device", "0"])
-            subprocess.Popen(commands)
-            if self.downstream2:
-                # this only on COCO with Jeopardy Model, not CIFAR10 on baseline
-                commands = ["python", "test_representation.py", self.downstream_task_config, cur_checkpoint, self.vocab_sz, self.parent_config, self.mtype, "--gpu-device", "5"]
-                subprocess.Popen(commands)
+        cur_checkpoint = os.path.join(self.checkpoint_dir, "epoch="+str(cur)+".ckpt")
+        commands = self.commands1(cur_checkpoint) + ["-l"]
+        subprocess.Popen(commands)
 
+    def on_epoch_end(self, trainer, pl_module):
+        cur = trainer.current_epoch
+        if cur % 10 == 1:
+            cur_checkpoint = os.path.join(self.checkpoint_dir, "epoch="+str(cur)+".ckpt")
+            subprocess.Popen(self.commands1(cur_checkpoint))
+            if self.downstream2:
+                subprocess.Popen(self.commands2(cur_checkpoint))
+                
 def run(config_path, gpu_device=None):
     config = process_config(config_path)
     seed_everything(config.seed, use_cuda=config.cuda)
@@ -43,22 +48,24 @@ def run(config_path, gpu_device=None):
         save_top_k=-1, # could be 5, and that would work fine
         period=1,
     )
-    
+
     wandb_logger = pl.loggers.WandbLogger(name=config.run_name, project=config.exp_name)
-    dm = BaselineDataModule(batch_size=config.optim_params.batch_size) if config.system == "coco-pretraining" else VQADataModule(batch_size=config.optim_params.batch_size)
+    dm = BaselineDataModule(batch_size=config.optim_params.batch_size, num_workers=config.num_workers, dataset_type=config.mtype) if config.system == "upper-bound-pretraining" else VQADataModule(batch_size=config.optim_params.batch_size, num_workers=config.num_workers)
+    num_samples = len(dm.train_dataset)
     mp = config.model_params
     
     model = None
     eval_realtime_callback = None
-    if config.system == "coco-pretraining":
-        model = UpperBoundModel(config)
-        eval_realtime_callback = RealTimeEvalCallback(checkpoint_dir=config.checkpoint_dir, downstream_task_config=config.downstream_task_config, parent_config=config_path, mtype="coco")
+    my_d2 = config.downstream_task2_config
+    if config.system == "upper-bound-pretraining":
+        model = UpperBoundModel(config, num_samples)
+        eval_realtime_callback = RealTimeEvalCallback(checkpoint_dir=config.checkpoint_dir, downstream_task_config=config.downstream_task_config, d2=my_d2, parent_config=config_path) #mtype refers to final task
     else:
-        if config.system == "InverseJeopardy":
-            model = JeopardyModel2(dm.vl, mp.im_vec_dim, mp.ans_dim, mp.question_dim, mp.n_hidden, mp.n_layers, config.optim_params, mtype="inv")
+        if config.system == "inverse-jeopardy":
+            model = JeopardyModel2(dm.vl, config)
         else:  
-            model = JeopardyModel(dm.vl, config)
-        eval_realtime_callback = RealTimeEvalCallback(config.checkpoint_dir, config.downstream_task_config, dm.vl, config_path, d2=config.downstream_task2_config)
+            model = JeopardyModel(dm.vl, config, num_samples=num_samples)
+        eval_realtime_callback = RealTimeEvalCallback(config.checkpoint_dir, config.downstream_task_config, dm.vl, config_path, d2=my_d2)
 
     trainer = pl.Trainer(
         default_root_dir=config.exp_dir,
@@ -79,7 +86,6 @@ def seed_everything(seed, use_cuda=True):
     if use_cuda: torch.cuda.manual_seed_all(seed)
     numpy.random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
-
 
 if __name__ == "__main__":
     import argparse

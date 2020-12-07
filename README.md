@@ -23,3 +23,8 @@ cd project
 python run.py
 ```
 </div>
+
+Some hyperparams:
+
+1. Optimal learning rate is 0.3 * BatchSize/256
+2. 

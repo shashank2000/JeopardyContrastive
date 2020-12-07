@@ -1,6 +1,8 @@
+import os.path
 import json
 from PIL import Image
 from torch.utils.data import Dataset
+import torch
 import os
 import string
 from tqdm import tqdm
@@ -12,7 +14,7 @@ PAD_TOKEN = "<pad>"
 UNK_TOKEN = "<unk>"
 
 class JeopardyDataset(Dataset):
-    def __init__(self, questions_file, answers_file, images_dir, transform, word2idx=None, train=True, q_len=8, ans_len=2, test_split=0.2):
+    def __init__(self, questions_file, answers_file, images_dir, transform, num_hidden=50, word2idx=None, train=True, q_len=8, ans_len=2, test_split=0.2, dumb_transfer=False, unique_answers=None, frequency_threshold=10):
         """
         Args:
             questions_file (string): Path to the json file with questions.
@@ -21,11 +23,14 @@ class JeopardyDataset(Dataset):
             transform (callable, optional): Optional transform to be applied
                 on a sample.
             word2idx: word2idx[word] = index, constructed on the train set only, must be passed in for the test set.  
+            frequency_threshold: how many times does a word have to appear as an answer for it to be considered. (default: 8) 
+            As used in Teney et al. https://arxiv.org/pdf/1708.02711.pdf
                 
         Example call:
             test_ds = JeopardyDataset("v2_OpenEnded_mscoco_train2014_questions.json", "v2_mscoco_train2014_annotations.json", "images")
 
         """
+        self.dumb_transfer = dumb_transfer
 
         # initializing the lengths of our questions and answers
         self.q_len = q_len
@@ -40,7 +45,9 @@ class JeopardyDataset(Dataset):
         # we want only 80% of the question/answer text to build the vocabulary
         self.answers = json.load(a_f)["annotations"]
         self.questions = json.load(q_f)["questions"]
+
         split_index = int((1-test_split) * len(self.questions))
+        # we are not even using the actual test set here
         if train:
             self.questions = self.questions[:split_index]
             self.answers = self.answers[:split_index]
@@ -52,7 +59,7 @@ class JeopardyDataset(Dataset):
         self.images_dir = images_dir
         self.image_id_to_filename = self._find_images()
         
-        
+        self.frequent_answers = self._find_frequent_answers(frequency_threshold)
 
         self.transform = transform
         self.question_to_answer = self._find_answers()
@@ -64,10 +71,14 @@ class JeopardyDataset(Dataset):
             # vocab made only from the train set
             self.vocab = self._make_vocab()
             self.word2idx = self._build_word2idx(self.vocab)
+            self.unique_answers = {}
         else:
             self.word2idx = word2idx
+            self.unique_answers = unique_answers
 
+        self.answer_tokens = set() # will use to build answer embedding bank in transfer task
         self.return_array = [0] * len(questions_dict) # upper bound on length
+        
         self.i = 0
         for q in tqdm(questions_dict):
             entry = questions_dict[q]
@@ -79,8 +90,41 @@ class JeopardyDataset(Dataset):
             q_vector_rep = self._words_to_indices(sentence_array)
             answer_word = self.question_to_answer[q]
             a_vector_rep = self._words_to_indices(answer_word, True)
+            self.answer_tokens.add(a_vector_rep)
+            if self.dumb_transfer:
+                if a_vector_rep not in self.unique_answers:
+                    if not train:
+                        print("shouldn't be firing in test")
+                    # only relevant with transfer
+                    a = len(self.unique_answers) # starts at 0
+                    self.unique_answers[a_vector_rep] = a
+                a_vector_rep = self.unique_answers[a_vector_rep]
             self.return_array[self.i] = q_vector_rep, image_id, a_vector_rep 
             self.i += 1
+        self.answer_tokens = list(self.answer_tokens)
+        print(self.i)
+
+    def _find_frequent_answers(self, threshold, only_one_word_answers=True, only_yes_confidence=False):
+        # build a list of all the tokens, 10*num_answers in length because each answer has 10 tokens
+        from collections import Counter
+        word_freq = Counter([])
+        print("building frequent_answers set")
+        for i, ann in tqdm(enumerate(self.answers)):
+            # initialized as this
+            for answer in ann['answers']:
+                actual_ans = answer['answer']
+                if only_one_word_answers:
+                    # TODO: deal with more than one word answers case
+                    if " " in actual_ans:
+                        # TODO: tokenization will bring the error words down, but takes too long
+                        print(actual_ans)
+                        continue
+                    if only_yes_confidence:
+                        if answer['answer_confidence'] != 'yes':
+                        # needs to be among candidate answers, if not the answer is just the UNK token
+                            continue
+                    word_freq[actual_ans] += 1
+        return set([word for word in word_freq if word_freq[word] >= threshold])
 
     def _build_word2idx(self, vocab):
         '''
@@ -91,6 +135,8 @@ class JeopardyDataset(Dataset):
 
     def _words_to_indices(self, sentence_array, answer=False):
         if answer:
+            # will always be set to UNK_TOKEN if its more than a word long
+            # what should I be doing here
             # its just a word now, "array" is misleading
             if sentence_array not in self.word2idx:
                 sentence_array = UNK_TOKEN
@@ -123,31 +169,39 @@ class JeopardyDataset(Dataset):
 
     def _pad_arr(self, arr, length):
         while len(arr) < length:
-            arr.append(PAD_TOKEN)
+            arr.insert(0, PAD_TOKEN)
         
     def _find_answers(self):
         """
-        
-        There several answers for each question in the dataset, for example, 
-        here's entry 0 of the answer vector for a random question:
-         {"answer": "net", "answer_confidence": "maybe", "answer_id": 1}
-        
-        For the sake of simplicity, we only consider answers that have answer_confidence: yes,
-        and are exactly one word long. We will apply a similar padding paradigm as we do with the question
-        texts later on, by using the _pad_arr function. One to one correspondence between answers and questions, 
-        as in there is one answers object for each question, and so its fair to go only until the test split for both.
+            There several answers for each question in the dataset, for example, 
+            here's entry 0 of the answer vector for a random question:
+            {"answer": "net", "answer_confidence": "maybe", "answer_id": 1}
+            
+            For the sake of simplicity, we only consider answers that have answer_confidence: yes,
+            and are exactly one word long. We will apply a similar padding paradigm as we do with the question
+            texts later on, by using the _pad_arr function. One to one correspondence between answers and questions, 
+            as in there is one answers object for each question, and so its fair to go only until the test split for both.
         """
         
         question_to_answer = {}
-        # loop through the questions, give each one an answer
-
-        for ann in self.answers:
+        # import collections
+        # # loop through the questions, give each one an answer
+        print("building answer mapping")
+        print("size of self.frequent_answers is " + str(len(self.frequent_answers)))
+        num_unknowns = 0
+        for i, ann in tqdm(enumerate(self.answers)):
+            # initialized as this
+            question_to_answer[ann["question_id"]] = UNK_TOKEN
             for answer in ann['answers']:
                 actual_ans = answer['answer']
-                # runtime issues here?
-                if answer['answer_confidence'] == 'yes' and len(nltk.word_tokenize(actual_ans)) == 1:
+                if actual_ans in self.frequent_answers:
+                    # seems like there are certain words where the tokenizer thinks it is two words?
+                    # needs to be among candidate answers, if not the answer is just the UNK token
                     question_to_answer[ann["question_id"]] = actual_ans
                     break
+            if question_to_answer[ann["question_id"]] == UNK_TOKEN:
+                num_unknowns += 1
+        print("{} unknown answers, {} known answers".format(str(num_unknowns), str(len(self.answers) - num_unknowns)))
         return question_to_answer
 
     def _find_images(self):
@@ -180,3 +234,35 @@ class JeopardyDataset(Dataset):
         path = os.path.join(self.images_dir, self.image_id_to_filename[image_id])
         img = self.transform(Image.open(path).convert('RGB'))
         return question, img, answer
+
+# to download glove weights:
+
+        # if os.stat('/home/shashank2000/synced/project/dataset/emb_weights.data').st_size < 10:
+        #     print("downloading glove weights")
+        #     import bcolz
+        #     import pickle
+        #     # init glove here
+        #     glove_path = '/data5/shashank2000'
+        #     vectors = bcolz.open(f'{glove_path}/6B.50.dat')[:]
+        #     words = pickle.load(open(f'{glove_path}/6B.50_words.pkl', 'rb'))
+        #     word2idx = pickle.load(open(f'{glove_path}/6B.50_idx.pkl', 'rb'))
+
+        #     glove = {w: vectors[word2idx[w]] for w in words}
+            
+        #     float_tensor = torch.randn(len(word2idx), num_hidden).to("cuda:1")
+        #     zero_v = torch.zeros(num_hidden)
+        #     rand_v = torch.randn(num_hidden)
+        #     for word in tqdm(self.word2idx):
+        #         i = self.word2idx[word]
+        #         val = None
+        #         if word == PAD_TOKEN:
+        #             val = zero_v
+        #         elif word not in glove:
+        #             val = rand_v
+        #         else:
+        #             val = torch.from_numpy(glove[word]).to("cuda:1")
+        #         float_tensor[i] = val
+        #     # write to file
+        #     torch.save(float_tensor, 'tensor.pt')
+        #     with open('/home/shashank2000/synced/project/emb_weights.data', 'wb') as filehandle:
+        #         pickle.dump(float_tensor, filehandle)

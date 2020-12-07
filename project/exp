@@ -1,9 +1,0 @@
-# example commands
-# python test_representation.py config/cocotransfer.json cur_checkpoint 100 config/pretraining_on_coco.json coco --gpu-device 5
-# python test_representation.py config/jeopardy_model.json /mnt/fs5/shashank2000/experiments/jeopardy_contrastive_regular_with_random_transforms/checkpoints/epoch=75.ckpt 20541 config/jeopardy_model.json regular --gpu-device 0
-
-# Steps
-# rerun model with transforms
-# run simclr only with transforms
-# image-image contrast + language-language contrast
-# mcq task

@@ -1,14 +1,15 @@
 {
     "exp_base": "/mnt/fs5/shashank2000",
-    "exp_name": "lars_cosine_all_correct",
-    "run_name": "lars_plus_cosine_decay",
-    "downstream_task_config": "config/cocotransfer.json",
-    "downstream_task2_config": "config/cifar10transfer.json",
+    "exp_name": "cifar_pretraining_cos_decay",
+    "run_name": "pretraining on CIFAR with contrastive objective but didn't change conv 7x7 like paper (lower bound on cifar accuracy)",
+    "downstream_task_config": "config/cifar10transfer.json",
+    "downstream_task2_config": null,
     "system": "upper-bound-pretraining",
     "cuda": true,
     "gpu_device": 8,
     "seed": 1337,
     "model_params": {
+        "num_workers": 8,
         "proj_output": 128,
         "proj_hidden": 512
     },
@@ -31,6 +32,6 @@
     "num_workers": 8,
     "validate": true,
     "copy_checkpoint_freq": 5,
-    "continue_from_checkpoint": "/mnt/fs5/shashank2000/experiments/lars_cosine_all_correct/checkpoints/epoch=132.ckpt",
-    "mtype": "coco-contrastive"
+    "continue_from_checkpoint": null,
+    "mtype": "cifar-contrastive"
 }

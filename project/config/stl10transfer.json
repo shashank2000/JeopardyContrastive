@@ -1,6 +1,6 @@
 {
     "exp_base": "/mnt/fs5/shashank2000",
-    "exp_name": "transfer_cifar10",
+    "exp_name": "transfer_cifar100",
     "cuda": true,
     "gpu_device": 0,
     "seed": 1337,
@@ -19,7 +19,7 @@
     "num_workers": 8,
     "copy_checkpoint_freq": 5,
     "continue_from_checkpoint": null,
-    "mtype": "cifar10",
-    "num_classes": 10,
+    "mtype": "stl10",
+    "num_classes": 100,
     "dropout_p": 0.1
 }

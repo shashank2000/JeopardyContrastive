@@ -13,7 +13,7 @@ import torch.utils.data as data
 from torchvision import transforms
 
 MSCOCO_ROOT = '/data5/wumike/coco'
-
+Image.MAX_IMAGE_PIXELS = None
 
 class MSCOCO(data.Dataset):
     NUM_CLASSES = 80
@@ -84,7 +84,9 @@ class BaseMSCOCO(data.Dataset):
         for anno in annotations:
             image_id = anno['image_id']
             image_path = join(image_dir, '%012d.jpg' % image_id)
-            bbox = anno['bbox']
+            bbox = anno['bbox'].copy()
+            bbox[2] = max(bbox[2], 1)
+            bbox[3] = max(bbox[3], 1)
             coco_class_id = anno['category_id']
             label = coco_cat_id_to_label[coco_class_id]
             all_filepaths.append(image_path)
@@ -97,8 +99,14 @@ class BaseMSCOCO(data.Dataset):
 
     def __getitem__(self, index):
         path = self.paths[index]
+        if index == 27299:
+            return self.__getitem__(27298)
         label = self.labels[index]
-        image = Image.open(path).convert(mode='RGB')
+        bbox = self.bboxes[index].copy()
+        # make the bbox correct [x, y, width, height] => [x, y, widht + x , height + y]
+        bbox[2] = bbox[0] + bbox[2]
+        bbox[3] = bbox[1] + bbox[3]
+        image = Image.open(path).convert(mode='RGB').crop(bbox)
         if self.image_transforms:
             image = self.image_transforms(image)
         return image, label

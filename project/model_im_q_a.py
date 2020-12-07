@@ -53,13 +53,7 @@ class JeopardyModel2(pl.LightningModule):
       loss = self.shared_step(batch)
       self.log("train_loss", loss, prog_bar=True)
       return loss 
-
-    def validation_step(self, batch, batch_idx):
-      # what hyperparams am I varying?
-      loss = self.shared_step(batch)
-      self.log("val_loss", loss, prog_bar=True)
-      return loss 
-
+      
     def shared_step(self, batch):
       # we test a question-image vector instead - so not quite Jeopardy
       question, image, answer = batch

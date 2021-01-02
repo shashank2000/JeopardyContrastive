@@ -14,7 +14,9 @@ from utils.model_utils import pretrain_optimizer
 import torch.nn.functional as F
 
 def get_word(answer, pred, word_dict):
-    # word_dict is passed in by the dataloader
+    '''
+        Utility function as a sanity check. 
+    '''
     for i, a in enumerate(answer):
         answer_word = word_dict[a.item()]
         pred_word = word_dict[torch.argmax(pred[i]).item()]
@@ -23,11 +25,11 @@ def get_word(answer, pred, word_dict):
 class NNJeopardyTest(pl.LightningModule):
     ''''
         We find the closest neighbor, and also return top-5 accuracy by using the topK function.
+        answer_tokens: the list of tokens that are answers. If answer_tokens = [1,3,16] then tokens 1, 3 and 16 are all valid answers.
+        This list is used in the construction of the answer embedding bank.
+        word_index_to_word: for debugging purposes
     '''
-
     def __init__(self, main_model_path, parent_config, config, vocab_sz=None, answer_tokens=None, word_index_to_word=None):
-        # we do everything exactly the same way as the main task, except there's no projection head
-        # do weighted voting instead?
         super().__init__()
         self.save_hyperparameters('main_model_path', 'parent_config', 'config', 'vocab_sz')
         if parent_config.system == "inverse-jeopardy":
@@ -45,7 +47,7 @@ class NNJeopardyTest(pl.LightningModule):
 
         self.q_rnn = self.main_model.rnn
         self.q_embed = self.main_model.i_h # learned embedding layer
-        # hidden state for main model would be whatever the end hidden state of the last batch was, pretty sure this can be made 0 as well
+        
         self.h = self.main_model.h 
         self.ans_final = self.main_model.ans_final # 128d
 
@@ -68,8 +70,6 @@ class NNJeopardyTest(pl.LightningModule):
     def _build_embed_bank(self):
         print("building answer embed bank")
         with torch.no_grad():
-            # 16000 possible values for i where answer = [i] 
-            # 
             self.answer_tokens = torch.tensor(self.answer_tokens, device=self.device)
             maxIndex = max(self.answer_tokens)
             self.answer_embed_bank = torch.zeros(maxIndex + 1, self.mp.ans_dim, device=self.device)   
@@ -108,64 +108,38 @@ class NNJeopardyTest(pl.LightningModule):
         return loss
 
     def shared_step(self, batch, testing=False, batch_idx=0):
-        # build this once
+        # self.answer_embed_bank contains the pretrained answer embeddings
         if self.answer_embed_bank is None:
             self._build_embed_bank()
 
-        # we've got to update the answer embed bank once per batch to reflect the new answer embeddings because 
-        # of changed weights on the answers
         question, image, answer = batch
         question = torch.stack(question)
-        f_q = self.forward_question(question) # its 10, 256, 256
+        f_q = self.forward_question(question) # 10, 256, 256
         f_q = self.fine_tune_question(f_q)
         im_vector = self.forward_image(image)
 
         answer_emb = self.forward_answer(answer)
         answer_image_vector = torch.cat((answer_emb, im_vector), 1)
         answer_image_vector = self.fine_tune_answer_image(answer_image_vector)
-        # we have an answer embed bank, now we concatate the image to each answer
-        # loss is just cross-entropy loss between answer and question_image vector
+        
         loss = VQATransferObjective(f_q, answer_image_vector, self.answer_embed_bank, im_vector, k=self.mp.loss_k, t=self.mp.loss_t).get_loss(self.answer_tokens)
-        # dot product is linear, so it doesn't matter how we actually do this
-        # let's make pred the dot product between question embedding and the image_answer bank (embed the same image in front of each answer)
-        # we finally pick the best answer
-        # could run profiler to see if moving to CPU is faster than this looping business
+        
         batch_size = im_vector.shape[0]
         pred = torch.zeros(batch_size, self.answer_embed_bank.shape[0], device=self.device)
         
-        # blue - 11, pink - 16000
-        # 9500 - get rid of zeros
-        # add torch nograd here
         with torch.no_grad(): 
-            # try einstein summation   
-            # build the answer embed bank here
-            # f_q (256, 256); answer_image_embed_bank (16000, 256) -> final is just 16000
-
-            # first we build the answer_image_embed_bank, which would be given by "merging" the answer_embed_bank with the image for each triplet
-            # im_vector is (256, 128); answer_embed_bank is 16000, 128 => answer_image_embed_bank would be 256, 16000, 256 # on answer-image embedding for each answer
-            # make an answer_image_embed_bank; 256, 16000, 256
-
+            '''
+                We are building the answer_image_embed bank here; the weird construction is mostly due to memory constraints. 
+                Once we build the answer_image_embed_bank, we make the prediction vector for question i; the best answer_image/question
+                match is taken to be the answer_image corresponding to the question.
+            '''
             image_bank = torch.cat([im_vector.unsqueeze(1)] * self.answer_embed_bank.shape[0], dim=1)
-            # if there were no memory constraints, we'd concatenate the image_bank with the answer_bank here; before this the answer bank needs to be made 256x in size
-            # but this is too large, and so we use a for loop
-            # answer_image_embed_bank = torch.cat([answer_embed_bank, image_bank], dim=2)
-            # pred = torch.einsum('ab,akb->ak', [f_q, answer_image_embed_bank])
-            
-            # answer_embed_bank: (16000, 128) -> (256, 16000, 128)
-            # (256, 128) - im_vector -> 256, 16000, 128
-            # image_answer_embed_bank
-            # answer_image_embed_bank -  (256, 16000, 128)
-            
-            # NCE without normalize
-            # NCE, k = 16000
-            # normalize on line 162
-
             for i in range(len(pred)):
                 repeated_indiv_im_vec = image_bank[i]
                 answer_image_embed_bank = torch.cat((self.answer_embed_bank, repeated_indiv_im_vec), dim=1) # (16000, 256)
                 answer_image_embed_bank = self.fine_tune_answer_image(answer_image_embed_bank)
-                # prediction for the ith image
                 answer_image_embed_bank = F.normalize(answer_image_embed_bank, dim=1)
+                # prediction for the ith image
                 pred[i] = f_q[i] @ answer_image_embed_bank.T # (256) * (256, 16000) = (16000)
 
         if not testing:
@@ -185,12 +159,11 @@ class NNJeopardyTest(pl.LightningModule):
                         found = True
                         break
                 if not found:
+                    # see https://github.com/PyTorchLightning/pytorch-lightning/blob/bf7c28cd54b5df05bf6c97614ad9cea3d001c105/pytorch_lightning/metrics/classification/accuracy.py
                     top_k_acc = self.test_accuracy_top_k(a+1,a)
             self.log('test_acc', acc)
             self.log('top_k_acc', top_k_acc)
-        
         return loss
 
     def configure_optimizers(self):
-        # DOES NOT USE LARS, USES THE 0.1x 120 160 STUFF - see Instance Discrimination paper
         return pretrain_optimizer(self.parameters(), self.op.momentum, self.op.weight_decay, self.op.learning_rate, lars=False)

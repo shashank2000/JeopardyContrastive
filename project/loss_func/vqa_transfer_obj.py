@@ -22,13 +22,12 @@ class VQATransferObjective(object):
   def get_loss(self, non_zero_indices, *args, **kwargs):
     # we start with just using all 30k negatives, no sampling complications
     batch_size = self.question_emb.size(0) # or .shape[0]
-    # similarity between current (question) and image, answer pair, taking dot product
+
     score = torch.sum(self.question_emb * self.answer_image_emb, dim=1)
     
     if self.k < self.answer_emb_bank.size(0):
-      # if we dont want to use all 30k negatives sample some
-      # what if I only picked from nonzero indices as a bandaid? 
       # hacky way to get out of actually changing numericalization logic in dataset
+      # retraining the pretrained embeddings would take too long :(
       noise_idxs = torch.randint(0, non_zero_indices.size(0), 
                                   (batch_size, self.k))
       noise_idxs = noise_idxs.long().to(self.device).view(-1)
@@ -45,6 +44,5 @@ class VQATransferObjective(object):
     norm = torch.einsum('ij,ikj->ik', [self.question_emb, self.answer_image_emb_bank]).to(self.device)
     # we need answer 1's embedding to be at answer_emb_bank[1]
     norm = torch.logsumexp(norm / self.t, dim=1)
-    # we want to maximize score/self.t - norm and therefore minimize the loss
     loss = -torch.mean(score / self.t - norm) 
     return loss

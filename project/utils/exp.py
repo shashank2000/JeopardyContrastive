@@ -4,7 +4,10 @@
 #  python test_representation.py config/stl10transfer.json /mnt/fs5/shashank2000/experiments/final_jeop_model/checkpoints/epoch=100.ckpt 20541 config/new_jeopardy_model.json --gpu-device 7
 # python test_representation.py config/dumbjeoptest.json /mnt/fs5/shashank2000/experiments/full_lstm_jeop/checkpoints/epoch=10.ckpt 20541 config/new_jeopardy_model.json --gpu-device 6
 python test_representation.py config/vqatest.json /mnt/fs5/shashank2000/experiments/final_jeop_model/checkpoints/epoch=31.ckpt 20541 config/new_jeopardy_model.json --gpu-device 3
-python test_representation.py config/dumpjeoptest.json /mnt/fs5/shashank2000/experiments/final_jeop_model/checkpoints/epoch=199.ckpt 20541 config/new_jeopardy_model.json --gpu-device 1
+python test_representation.py config/dumbjeoptest.json /mnt/fs5/shashank2000/experiments/final_jeop_model/checkpoints/epoch=199.ckpt 20541 config/new_jeopardy_model.json --gpu-device 1
+python test_representation.py config/stl10transfer.json /mnt/fs5/shashank2000/experiments/lars_cosine_all_correct/checkpoints/epoch=199.ckpt 20541 config/pretraining_on_coco.json --gpu-device 7
+python test_representation.py config/vqatestbaseline.json /mnt/fs5/shashank2000/experiments/lars_cosine_all_correct/checkpoints/epoch=199.ckpt 20541 config/pretraining_on_coco.json --gpu-device 7
+
 # Steps
 # rerun model with transforms
 # run simclr only with transforms

@@ -8,13 +8,13 @@ import string
 from tqdm import tqdm
 import nltk
 
-START_TOKEN = "<s>"
-END_TOKEN = "</s>"
+# START_TOKEN = "<s>"
+# END_TOKEN = "</s>"
 PAD_TOKEN = "<pad>"
 UNK_TOKEN = "<unk>"
 
 class JeopardyDataset(Dataset):
-    def __init__(self, questions_file, answers_file, images_dir, transform, num_hidden=50, word2idx=None, train=True, q_len=8, ans_len=2, test_split=0.2, dumb_transfer=False, unique_answers=None, frequency_threshold=10):
+    def __init__(self, questions_file, answers_file, images_dir, transform, word2idx=None, train=True, q_len=8, ans_len=2, test_split=0.2, dumb_transfer=False, most_common_answers=None, num_answers=0, frequency_threshold=10):
         """
         Args:
             questions_file (string): Path to the json file with questions.
@@ -35,9 +35,10 @@ class JeopardyDataset(Dataset):
         # initializing the lengths of our questions and answers
         self.q_len = q_len
         self.ans_len = ans_len
-
+        self.num_answers = num_answers
         # return test or train set?
         self.train = train
+        self.glove_dict = self._get_glove_indices()
 
         q_f = open(questions_file, 'r')
         a_f = open(answers_file, 'r')
@@ -58,23 +59,19 @@ class JeopardyDataset(Dataset):
         questions_dict = {q['question_id']: (q["question"], int(q["image_id"])) for q in self.questions}
         self.images_dir = images_dir
         self.image_id_to_filename = self._find_images()
-        
-        self.frequent_answers = self._find_frequent_answers(frequency_threshold)
-
         self.transform = transform
+        self.most_common_answers = most_common_answers        
+        self.frequent_answers = self._find_frequent_answers(frequency_threshold) # this guy has a side effect where he builds most_common_answers in train dumb case, which isn't great
         self.question_to_answer = self._find_answers()
 
         # filter down questions_dict to only contain questions with images in the dataset
         questions_dict = {q: (questions_dict[q][0], questions_dict[q][1]) for q in questions_dict if questions_dict[q][1] in self.image_id_to_filename and q in self.question_to_answer}
-
         if train:
             # vocab made only from the train set
             self.vocab = self._make_vocab()
             self.word2idx = self._build_word2idx(self.vocab)
-            self.unique_answers = {}
         else:
             self.word2idx = word2idx
-            self.unique_answers = unique_answers
 
         self.answer_tokens = set() # will use to build answer embedding bank in transfer task
         self.return_array = [0] * len(questions_dict) # upper bound on length
@@ -92,19 +89,26 @@ class JeopardyDataset(Dataset):
             a_vector_rep = self._words_to_indices(answer_word, True)
             self.answer_tokens.add(a_vector_rep)
             if self.dumb_transfer:
-                if a_vector_rep not in self.unique_answers:
-                    if not train:
-                        print("shouldn't be firing in test")
-                    # only relevant with transfer
-                    a = len(self.unique_answers) # starts at 0
-                    self.unique_answers[a_vector_rep] = a
-                a_vector_rep = self.unique_answers[a_vector_rep]
+                a_vector_rep = self._constrained_answers(a_vector_rep)
             self.return_array[self.i] = q_vector_rep, image_id, a_vector_rep 
             self.i += 1
         self.answer_tokens = list(self.answer_tokens)
         print(self.i)
 
+    def _constrained_answers(self, a_vector_rep):
+        '''
+            if a_vector_rep is in the top self.num_answers - 1 most common answers (0-indexed), we map to the respective class.
+            Else, we set it to self.num_answers - 1
+        '''
+        if a_vector_rep not in self.most_common_answers:
+            return self.num_answers
+        return self.most_common_answers[a_vector_rep]
+
+        
     def _find_frequent_answers(self, threshold, only_one_word_answers=True, only_yes_confidence=False):
+        '''
+            Not sure what the specific future use case of this is
+        '''
         # build a list of all the tokens, 10*num_answers in length because each answer has 10 tokens
         from collections import Counter
         word_freq = Counter([])
@@ -124,13 +128,21 @@ class JeopardyDataset(Dataset):
                         # needs to be among candidate answers, if not the answer is just the UNK token
                             continue
                     word_freq[actual_ans] += 1
+        
+        if self.dumb_transfer and self.train:
+            from collections import Counter
+            most_common_answers = Counter(word_freq).most_common(self.num_answers)
+            mca_as_list = [k[0] for k in most_common_answers]
+            self.most_common_answers = {w:i for i, w in enumerate(mca_as_list)}
         return set([word for word in word_freq if word_freq[word] >= threshold])
 
     def _build_word2idx(self, vocab):
         '''
-        word2idx[PAD_TOKEN] = 0
+        word2idx[PAD_TOKEN] = len(glove_dict)
         '''
-        word2idx = {w:i for i, w in enumerate(vocab)}
+        word2idx = {w:self.glove_dict[w] for w in vocab}
+        word2idx[UNK_TOKEN] = len(self.glove_dict) - 2 #sandberger is the word for unknown, we learn this embedding over time
+        word2idx[PAD_TOKEN] = len(self.glove_dict) - 1
         return word2idx
 
     def _words_to_indices(self, sentence_array, answer=False):
@@ -138,6 +150,7 @@ class JeopardyDataset(Dataset):
             # will always be set to UNK_TOKEN if its more than a word long
             # what should I be doing here
             # its just a word now, "array" is misleading
+            sentence_array = sentence_array.lower()
             if sentence_array not in self.word2idx:
                 sentence_array = UNK_TOKEN
             return self.word2idx[sentence_array]
@@ -154,18 +167,31 @@ class JeopardyDataset(Dataset):
         answer_text = ' '.join(answer_set)
         vocab = nltk.word_tokenize(answer_text)
         vocab.extend(nltk.word_tokenize(question_text))
-        # adding special tokens to the vocab
-        vocab = [PAD_TOKEN, END_TOKEN, START_TOKEN, UNK_TOKEN] + vocab
-        vocab = set(vocab)
+        vocab = set(vocab) # takes away duplicates
+        vocab = [word.lower() for word in vocab]
+        copy_vocab = vocab.copy()
+        for word in copy_vocab:
+            # remove everything not in glove
+            if word not in self.glove_dict:
+                vocab.remove(word)
         self.vocab_length = len(vocab)
         return vocab
         
+    def _get_glove_indices(self):
+        import pickle
+        GLOVE_LOC = '/data5/shashank2000/6B.50_idx.pkl'
+        with open(f'{GLOVE_LOC}', 'rb') as f:
+            glove_dict = pickle.load(f)
+        return glove_dict
+
     def _preprocess_sentence(self, sentence):
         arr = nltk.word_tokenize(sentence)
+        arr = [word.lower() for word in arr]
         if len(arr) > self.q_len:
             return []
         self._pad_arr(arr, self.q_len)
-        return [START_TOKEN] + arr + [END_TOKEN]
+        # TODO: look into START_TOKEN, END_TOKEN usefulness, perhaps ablation study?
+        return arr
 
     def _pad_arr(self, arr, length):
         while len(arr) < length:

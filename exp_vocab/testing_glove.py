@@ -1,4 +1,5 @@
 import bcolz
+import numpy as np
 glove_path = '.'
 words = []
 idx = 0
@@ -19,4 +20,3 @@ vectors = bcolz.carray(vectors[1:].reshape((400000, 50)), rootdir=f'{glove_path}
 vectors.flush()
 pickle.dump(words, open(f'{glove_path}/6B.50_words.pkl', 'wb'))
 pickle.dump(word2idx, open(f'{glove_path}/6B.50_idx.pkl', 'wb'))
-

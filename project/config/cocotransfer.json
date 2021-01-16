@@ -18,7 +18,7 @@
     "num_epochs": 100,
     "num_workers": 8,
     "copy_checkpoint_freq": 5,
-    "continue_from_checkpoint": null,
+    "continue_from_checkpoint": "/mnt/fs5/shashank2000/experiments/coco_transfer_crop/epoch=87-v1.ckpt",
     "mtype": "coco",
     "num_classes": 80,
     "dropout_p": 0.1

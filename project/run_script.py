@@ -13,7 +13,7 @@ from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class RealTimeEvalCallback(pl.Callback):
-    def __init__(self, checkpoint_dir, downstream_task_config, vocab_sz=100, parent_config=None, d2=None):
+    def __init__(self, checkpoint_dir, downstream_task_config=None, vocab_sz=100, parent_config=None, d2=None):
         self.checkpoint_dir = checkpoint_dir
         self.downstream_task_config = downstream_task_config
         self.vocab_sz = str(vocab_sz)
@@ -65,14 +65,14 @@ def run(config_path, gpu_device=None):
             model = JeopardyModel2(dm.vl, config)
         else:  
             model = JeopardyModel(dm.vl, config, num_samples=num_samples)
-        eval_realtime_callback = RealTimeEvalCallback(config.checkpoint_dir, config.downstream_task_config, dm.vl, config_path, d2=my_d2)
+        # eval_realtime_callback = RealTimeEvalCallback(config.checkpoint_dir, config.downstream_task_config, dm.vl, config_path, d2=my_d2)
 
     trainer = pl.Trainer(
         default_root_dir=config.exp_dir,
         gpus=[gpu_device],
         max_epochs=config.num_epochs,
         checkpoint_callback=ckpt_callback,
-        callbacks=[eval_realtime_callback],
+        # callbacks=[eval_realtime_callback],
         resume_from_checkpoint=config.continue_from_checkpoint,
         logger=wandb_logger
     )

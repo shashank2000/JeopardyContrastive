@@ -6,6 +6,7 @@ from baseline_data_module import BaselineDataModule
 from data_module import VQADataModule
 from vqatransfer import DumbJeopardyTest
 from realvqatransfer import NNJeopardyTest
+from vqabaseline import BaselineVQA
 
 def run(vocab_sz, checkpoint, config_path, hundred_epochs=False, parent_config=None, gpu_device=None):
     '''
@@ -33,16 +34,21 @@ def run(vocab_sz, checkpoint, config_path, hundred_epochs=False, parent_config=N
     model, dm = None, None
     if config.mtype == "vqa":
         # TODO: num_samples stuff here
-        dumb_transf = False
-        if "fancier_jeop_test" not in config.exp_name:
-            dumb_transf = True
-            dm = VQADataModule(batch_size=config.optim_params.batch_size, num_workers=config.num_workers, dumb_transfer=dumb_transf, transfer=True)
-            model = DumbJeopardyTest(checkpoint, process_config(parent_config), config, vocab_sz=vocab_sz, num_classes=dm.num_answer_classes)
+        dumb_transf = ("fancier_jeop_test" not in config.exp_name)
+        answer_classes = 0
+        if dumb_transf:
+            answer_classes = config.answer_classes
+        dm = VQADataModule(num_answers=answer_classes, batch_size=config.optim_params.batch_size, num_workers=config.num_workers, dumb_transfer=dumb_transf, transfer=True)
+        # the models get the number of answer classes from the config file
+        if config.exp_name == "vqa_baseline":
+            model = BaselineVQA(checkpoint, process_config(parent_config), config, word_index_to_word=dm.idx_to_word)
+        elif config.exp_name == "dumb_jeop_test":
+            model = DumbJeopardyTest(checkpoint, process_config(parent_config), config, vocab_sz=vocab_sz)
         else:
-            dm = VQADataModule(batch_size=config.optim_params.batch_size, num_workers=config.num_workers, dumb_transfer=dumb_transf, transfer=True)
             model = NNJeopardyTest(checkpoint, process_config(parent_config), config, vocab_sz=vocab_sz, answer_tokens=dm.train_dataset.answer_tokens, word_index_to_word=dm.idx_to_word)
     else:
         dm = BaselineDataModule(batch_size=config.optim_params.batch_size, num_workers=config.num_workers, dataset_type=config.mtype)
+        # add len(dm) in here to find num_samples and pass it into the model
         model = SimpleClassifier(checkpoint, process_config(parent_config), config, vocab_sz=vocab_sz, num_samples=len(dm.train_dataset))
     trainer = pl.Trainer(
         default_root_dir=config.exp_dir,

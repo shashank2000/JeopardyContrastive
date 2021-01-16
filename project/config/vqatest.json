@@ -23,6 +23,5 @@
     "num_workers": 8,
     "copy_checkpoint_freq": 5,
     "continue_from_checkpoint": null,
-    "num_classes": 11000,
     "mtype": "vqa"
 }

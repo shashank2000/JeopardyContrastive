@@ -31,6 +31,6 @@
     "num_workers": 8,
     "validate": true,
     "copy_checkpoint_freq": 5,
-    "continue_from_checkpoint": "/mnt/fs5/shashank2000/experiments/lars_cosine_all_correct/checkpoints/epoch=132.ckpt",
+    "continue_from_checkpoint": "/mnt/fs5/shashank2000/experiments/lars_cosine_all_correct/checkpoints/epoch=197.ckpt",
     "mtype": "coco-contrastive"
 }

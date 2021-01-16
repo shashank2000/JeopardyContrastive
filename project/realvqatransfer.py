@@ -60,7 +60,7 @@ class NNJeopardyTest(pl.LightningModule):
 
         self.h_o = self.main_model.h_o # outputs a 256 dim vector for question embedding
         
-         # finetuning the concatenated answer-image vector
+        # finetuning the concatenated answer-image vector
         self.fine_tune_answer_image = nn.Linear(self.mp.q_dim, self.mp.q_dim)
         self.fine_tune_question = nn.Linear(self.mp.q_dim, self.mp.q_dim)
 
@@ -92,7 +92,6 @@ class NNJeopardyTest(pl.LightningModule):
         return res
     
     def forward_answer(self, x):
-        # [19]
       # just a linear layer over the embeddings to begin with
       x = self.q_embed(x)
       return self.ans_final(x)
@@ -113,6 +112,7 @@ class NNJeopardyTest(pl.LightningModule):
             self._build_embed_bank()
 
         question, image, answer = batch
+        
         question = torch.stack(question)
         f_q = self.forward_question(question) # 10, 256, 256
         f_q = self.fine_tune_question(f_q)
@@ -134,6 +134,8 @@ class NNJeopardyTest(pl.LightningModule):
                 match is taken to be the answer_image corresponding to the question.
             '''
             image_bank = torch.cat([im_vector.unsqueeze(1)] * self.answer_embed_bank.shape[0], dim=1)
+            answer = F.one_hot(answer, num_classes=len(self.answer_embed_bank))
+        
             for i in range(len(pred)):
                 repeated_indiv_im_vec = image_bank[i]
                 answer_image_embed_bank = torch.cat((self.answer_embed_bank, repeated_indiv_im_vec), dim=1) # (16000, 256)
@@ -144,7 +146,8 @@ class NNJeopardyTest(pl.LightningModule):
 
         if not testing:
             if batch_idx % 10 == 0:
-               get_word(answer, pred, self.word_index_to_word)
+                breakpoint()
+                get_word(answer, pred, self.word_index_to_word)
             acc = self.train_accuracy(pred, answer) # if pred is [0.1, 0.7, 10] and answer is 2, it should fire
             self.log('train_acc', acc)
         else:

@@ -7,7 +7,7 @@ from model import JeopardyModel
 from torchvision import transforms, datasets
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.utils.data import DataLoader
-from torch.optim import SGD
+from torch.optim import SGD, Adam
 import torch
 from pytorch_lightning.utilities import AMPType
 
@@ -15,10 +15,9 @@ from pytorch_lightning.utilities import AMPType
 from torch.optim.optimizer import Optimizer
 
 class DumbJeopardyTest(pl.LightningModule):
-    def __init__(self, main_model_path, parent_config, config, vocab_sz=None, num_classes=10000):
+    def __init__(self, main_model_path, parent_config, config, vocab_sz=None):
         super().__init__()
         self.save_hyperparameters()
-        breakpoint()
         if parent_config.system == "inverse-jeopardy":
             self.main_model = JeopardyModel2.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
         else:
@@ -41,12 +40,12 @@ class DumbJeopardyTest(pl.LightningModule):
         self.mp = config.model_params
         
         # input_dim = self.mp.q_dim + self.mp.im_dim # 512, which happens to be same as post-pool dimension
-        input_dim = self.mp.q_dim + 512
+        input_dim = self.mp.q_dim + self.mp.im_dim
         self.n_hidden = self.mp.n_hidden # should be same as number of hidden layers in pretraining network
         self.h_o = self.main_model.h_o # outputs a 256 dim vector
-        # self.fine_tune_image = nn.Linear(512, self.mp.im_dim)
+        self.fine_tune_image = nn.Linear(512, self.mp.im_dim)
         
-        self.fine_tune = nn.Linear(input_dim, num_classes)
+        self.fine_tune = nn.Linear(input_dim, config.answer_classes + 1) # for the ones that don't fit any of the classes
             
         self.h = None
         
@@ -57,7 +56,7 @@ class DumbJeopardyTest(pl.LightningModule):
     def forward_image(self, x):
         x = self.resnet(x)
         x = x.view(self.op.batch_size, -1)
-        return x
+        return self.fine_tune_image(x)
 
     def forward_question(self, x):
         res, h = self.q_rnn(self.q_embed(x), self.h) 
@@ -76,9 +75,10 @@ class DumbJeopardyTest(pl.LightningModule):
 
     def shared_step(self, batch, testing=False):
         question, image, answer = batch
+        # transform answer so everything is < num_answers
         question = torch.stack(question)
         f_q = self.forward_question(question) # its 10, 256, 256
-        f_q = f_q.squeeze()[-1, :] # 256
+        f_q = f_q.squeeze()[-1, :] # still doubt whether taking the final layer is the way to go
         im_vector = self.forward_image(image)
         im_vector = im_vector.squeeze()
 
@@ -110,4 +110,4 @@ class DumbJeopardyTest(pl.LightningModule):
         return loss
 
     def configure_optimizers(self):
-        return SGD(self.parameters(), self.op.momentum, self.op.weight_decay, self.op.learning_rate)
+        return Adam(self.parameters(), lr=self.op.learning_rate)

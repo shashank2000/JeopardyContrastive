@@ -155,6 +155,7 @@ class LARSWrapper(object):
 import pickle
 def get_pretrained_emb_layer(file_loc):
     # load from pickle file and return a FloatTensor
+    # how many words in my lookup table/ how large is the vocabulary?
     with open(f'{file_loc}', 'rb') as f:
         arr = pickle.load(f)
         return arr

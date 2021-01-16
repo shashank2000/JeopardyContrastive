@@ -28,7 +28,7 @@ class JeopardyModel(pl.LightningModule):
       self.tau = mp.tau
       # initialize with Glove embeddings to have accuracy skyrocket
       emb_layer = get_pretrained_emb_layer(emb_layer_file)
-      self.i_h = Embedding.from_pretrained(emb_layer, padding_idx=0) # verify padding index is 0  
+      self.i_h = Embedding.from_pretrained(emb_layer, padding_idx=400000-1) # verify padding index is 0  
 
       self.h_o = Linear(self.n_hidden, self.question_dim)
       self.h = None 
@@ -61,10 +61,10 @@ class JeopardyModel(pl.LightningModule):
       if not self.h:
         batch_size = x.shape[1]
         self.h = torch.zeros(1, batch_size, self.n_hidden, device=self.device), torch.zeros(1, batch_size, self.n_hidden, device=self.device) # h0, c0
-      res, h = self.rnn(self.i_h(x), self.h)
+      output, h = self.rnn(self.i_h(x), self.h)
       self.h = h[0].detach(), h[1].detach()
       # res is currently of the form (10, 256, 50); we only want the last word predictions
-      res = self.h_o(res)[-1]
+      res = self.h_o(output)[-1] # why of the final state again????
       return res
 
     def forward_answer(self, x):

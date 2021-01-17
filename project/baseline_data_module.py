@@ -1,6 +1,7 @@
 from torchvision import transforms, datasets
 from dataset.mscoco import MSCOCO, BaseMSCOCO
 from dataset.cifar10 import CIFAR10Modified, CIFAR100Modified
+from dataset.imagenet import ImageNet
 from torch.utils.data import DataLoader
 from pytorch_lightning import LightningDataModule
 from torch import tensor
@@ -107,6 +108,9 @@ class BaselineDataModule(LightningDataModule):
             transform=self.test_transform,
             download=True
         )
+    elif dataset_type == "imagenet":
+      train_dataset = ImageNet(train=True, image_transforms=self.fine_tune_train_transform)
+      test_dataset = ImageNet(train=False, image_transforms=self.test_transform)
     
     return train_dataset, test_dataset
       

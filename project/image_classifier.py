@@ -49,8 +49,6 @@ class SimpleClassifier(pl.LightningModule):
         # confirm it is indeed frozen here
         
         # post pool features taken; getting rid of projection head
-        # TODO: make sure this is post-pool!!!     
-        # does dropout make it better?
         self.block_forward = nn.Sequential(
             nn.Dropout(p=config.dropout_p),
             nn.Linear(512, config.num_classes)

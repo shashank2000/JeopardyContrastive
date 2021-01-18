@@ -35,7 +35,7 @@ class NNJeopardyTest(pl.LightningModule):
         if parent_config.system == "inverse-jeopardy":
             self.main_model = JeopardyModel2.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
         else:
-            self.main_model = JeopardyModel.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
+            self.main_model = JeopardyModel.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config, emb_layer_file='/home/shashank2000/synced/project/emb_weights_1.data')
         
         self.op = config.optim_params
         self.mp = config.model_params

@@ -14,7 +14,7 @@ from pytorch_lightning.utilities import AMPType
 from torch.optim.optimizer import Optimizer
 
 class JeopardyModel(pl.LightningModule):
-    def __init__(self, vocab_sz, config, num_samples=1000, emb_layer_file='/home/shashank2000/synced/project/emb_weights.data'):
+    def __init__(self, vocab_sz, config, num_samples=1000, emb_layer_file='/home/shashank2000/synced/project/emb_weights_1.data'):
       # next step - 'element-wise product was FAR superior to a concatenation' - but not sure what that would look like in practice with Glove Embeddings
       super().__init__()
       self.save_hyperparameters()
@@ -42,7 +42,7 @@ class JeopardyModel(pl.LightningModule):
       self.projection_head = Projection(self.question_dim, mp.proj_hidden, mp.proj_output)
       # so it'll stop complaining:
       # self.projection_head = Projection(256, 256, 128)
-      
+      breakpoint()
       self.image_feature_extractor.fc = Linear(512, self.im_vec_dim)
 
       # compute iters per epoch

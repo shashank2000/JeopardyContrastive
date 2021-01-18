@@ -62,8 +62,9 @@ class VQADataModule(LightningDataModule):
     
     saved_train_file = 'train{}.pt'.format(self.is_dumb(dumb_transfer, num_answers))
     saved_test_file = 'test{}.pt'.format(self.is_dumb(dumb_transfer, num_answers))
-    
+
     try:
+        print("found file")
         self.train_dataset = torch.load(saved_train_file)
         self.test_dataset = torch.load(saved_test_file)
     except:
@@ -83,7 +84,7 @@ class VQADataModule(LightningDataModule):
       assert(num_answer_classes == num_answers)
     
   def train_dataloader(self):
-      return DataLoader(self.train_dataset, batch_size=self.batch_size,
+      return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True,
                         num_workers=self.num_workers, pin_memory=True, drop_last=True)
 
   def test_dataloader(self):

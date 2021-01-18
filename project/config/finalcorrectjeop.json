@@ -1,7 +1,7 @@
 {
     "exp_base": "/mnt/fs5/shashank2000",
-    "exp_name": "final_jeop_model_correct_padding",
-    "run_name": "correct proj dims; LARS but still single layer LSTM and doing detach",
+    "exp_name": "final_jeop_model_correct_padding_sanity_check",
+    "run_name": "sanity check",
     "system": "regular-jeopardy",
     "cuda": true,
     "gpu_device": 8,
@@ -36,5 +36,5 @@
     "num_epochs": 200,
     "validate": true,
     "copy_checkpoint_freq": 5,
-    "continue_from_checkpoint": "/mnt/fs5/shashank2000/experiments/final_jeop_model_correct_padding/checkpoints/epoch=115.ckpt"
+    "continue_from_checkpoint": null
 }

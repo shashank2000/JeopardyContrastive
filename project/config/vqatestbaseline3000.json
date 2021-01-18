@@ -1,27 +1,26 @@
 {
     "exp_base": "/mnt/fs5/shashank2000",
-    "exp_name": "fancier_jeop_test",
-    "run_name": "testing on new padding stuff",
+    "exp_name": "vqa_baseline_3000",
+    "run_name": "test1_linear",
     "cuda": true,
     "gpu_device": 0,
     "seed": 1337,
     "optim_params": {
         "batch_size": 256,
-        "learning_rate": 0.03,
+        "learning_rate": 1e-4,
         "momentum": 0.9,
-        "weight_decay": 1e-4
+        "weight_decay": 1e-6
     },
     "model_params": {
         "q_dim": 256,
-        "im_dim": 128,
-        "ans_dim": 128,
-        "loss_t": 0.07,
-        "loss_k": 4096,
+        "im_dim": 256,
+        "glove_dim": 50,
         "top_k": 5
     },
     "num_epochs": 90,
     "num_workers": 8,
     "copy_checkpoint_freq": 5,
     "continue_from_checkpoint": null,
-    "mtype": "vqa"
+    "mtype": "vqa",
+    "num_classes": 3000
 }

@@ -89,7 +89,7 @@ class JeopardyDataset(Dataset):
             a_vector_rep = self._words_to_indices(answer_word, True)
             self.answer_tokens.add(a_vector_rep)
             if self.dumb_transfer:
-                a_vector_rep = self._constrained_answers(a_vector_rep)
+                a_vector_rep = self._constrained_answers(answer_word)
             self.return_array[self.i] = q_vector_rep, image_id, a_vector_rep 
             self.i += 1
         self.answer_tokens = list(self.answer_tokens)
@@ -132,7 +132,7 @@ class JeopardyDataset(Dataset):
         if self.dumb_transfer and self.train:
             from collections import Counter
             most_common_answers = Counter(word_freq).most_common(self.num_answers)
-            mca_as_list = [k[0] for k in most_common_answers]
+            mca_as_list = [k[0] for k in most_common_answers] # don't really care about the frequencies
             self.most_common_answers = {w:i for i, w in enumerate(mca_as_list)}
         return set([word for word in word_freq if word_freq[word] >= threshold])
 
@@ -171,7 +171,7 @@ class JeopardyDataset(Dataset):
         vocab = [word.lower() for word in vocab]
         copy_vocab = vocab.copy()
         for word in copy_vocab:
-            # remove everything not in glove
+            # remove everything not in glove TODO: re-run Jeopardy with this
             if word not in self.glove_dict:
                 vocab.remove(word)
         self.vocab_length = len(vocab)
@@ -263,32 +263,32 @@ class JeopardyDataset(Dataset):
 
 # to download glove weights:
 
-        # if os.stat('/home/shashank2000/synced/project/dataset/emb_weights.data').st_size < 10:
-        #     print("downloading glove weights")
-        #     import bcolz
-        #     import pickle
-        #     # init glove here
-        #     glove_path = '/data5/shashank2000'
-        #     vectors = bcolz.open(f'{glove_path}/6B.50.dat')[:]
-        #     words = pickle.load(open(f'{glove_path}/6B.50_words.pkl', 'rb'))
-        #     word2idx = pickle.load(open(f'{glove_path}/6B.50_idx.pkl', 'rb'))
+#         if os.stat('/home/shashank2000/synced/project/dataset/emb_weights.data').st_size < 10:
+#             print("downloading glove weights")
+#             import bcolz
+#             import pickle
+#             # init glove here
+#             glove_path = '/data5/shashank2000'
+#             vectors = bcolz.open(f'{glove_path}/6B.50.dat')[:]
+#             words = pickle.load(open(f'{glove_path}/6B.50_words.pkl', 'rb'))
+#             word2idx = pickle.load(open(f'{glove_path}/6B.50_idx.pkl', 'rb'))
 
-        #     glove = {w: vectors[word2idx[w]] for w in words}
-            
-        #     float_tensor = torch.randn(len(word2idx), num_hidden).to("cuda:1")
-        #     zero_v = torch.zeros(num_hidden)
-        #     rand_v = torch.randn(num_hidden)
-        #     for word in tqdm(self.word2idx):
-        #         i = self.word2idx[word]
-        #         val = None
-        #         if word == PAD_TOKEN:
-        #             val = zero_v
-        #         elif word not in glove:
-        #             val = rand_v
-        #         else:
-        #             val = torch.from_numpy(glove[word]).to("cuda:1")
-        #         float_tensor[i] = val
-        #     # write to file
-        #     torch.save(float_tensor, 'tensor.pt')
-        #     with open('/home/shashank2000/synced/project/emb_weights.data', 'wb') as filehandle:
-        #         pickle.dump(float_tensor, filehandle)
+#             glove = {w: vectors[word2idx[w]] for w in words}
+
+#             float_tensor = torch.randn(len(word2idx), num_hidden).to("cuda:1")
+#             zero_v = torch.zeros(num_hidden)
+#             rand_v = torch.randn(num_hidden)
+#             for word in tqdm(self.word2idx):
+#                 i = self.word2idx[word]
+#                 val = None
+#                 if word == PAD_TOKEN:
+#                     val = zero_v
+#                 elif word not in glove:
+#                     val = rand_v
+#                 else:
+#                     val = torch.from_numpy(glove[word]).to("cuda:1")
+#                 float_tensor[i] = val
+#             # write to file
+#             torch.save(float_tensor, '/home/shashank2000/synced/project/emb_weights.data')
+# # with open('/home/shashank2000/synced/project/emb_weights.data', 'wb') as filehandle:
+#             #     pickle.dump(float_tensor, filehandle)

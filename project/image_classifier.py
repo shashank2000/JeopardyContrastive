@@ -7,7 +7,7 @@ from pytorch_lightning.utilities import AMPType
 from model_im_q_a import JeopardyModel2
 from model import JeopardyModel
 from torchvision import transforms, datasets
-from torch.optim import SGD
+from torch.optim import SGD, Adam
 from pytorch_lightning.loggers import WandbLogger
 from baseline_simclr import UpperBoundModel
 from utils.model_utils import pretrain_optimizer, pretrain_scheduler
@@ -37,23 +37,23 @@ class SimpleClassifier(pl.LightningModule):
         '''
         
         super().__init__()
-
+        # or load weights mapping all weights from GPU 1 to GPU 0 ...
         if parent_config.system == "inverse-jeopardy":
             self.main_model = JeopardyModel2.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
         elif parent_config.system == "upper-bound-pretraining":
             self.main_model = UpperBoundModel.load_from_checkpoint(main_model_path, config=parent_config, num_samples=num_samples)
         else:
-            self.main_model = JeopardyModel.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
+            self.main_model = JeopardyModel.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config, emb_layer_file='/home/shashank2000/synced/project/emb_weights_1.data')
         self.main_model.freeze()
         self.resnet = self.main_model.image_feature_extractor
         # confirm it is indeed frozen here
         
         # post pool features taken; getting rid of projection head
-        self.block_forward = nn.Sequential(
-            nn.Dropout(p=config.dropout_p),
-            nn.Linear(512, config.num_classes)
-        )
-        self.resnet.fc = self.block_forward # logistic regression, and that's it!
+        # self.block_forward = nn.Sequential(
+        #     nn.Dropout(p=config.dropout_p),
+        # )
+        self.resnet.fc = nn.Linear(512, config.num_classes)
+ # logistic regression, and that's it!
 
         self.test_accuracy =  pl.metrics.Accuracy()
         self.train_accuracy = pl.metrics.Accuracy() # to check for overfitting!
@@ -73,6 +73,7 @@ class SimpleClassifier(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         x, y = batch
         logits = self(x)
+        breakpoint()
         loss = nn.functional.nll_loss(logits, y)
         self.log('train_loss', loss)
         acc = self.train_accuracy(logits, y) 
@@ -120,4 +121,6 @@ class SimpleClassifier(pl.LightningModule):
 
     def configure_optimizers(self):
       # TODO: add exclude_bn_bias flag
-      return pretrain_optimizer(self.parameters(), self.op.momentum, self.op.weight_decay, self.op.learning_rate, lars=True)
+      breakpoint()
+      return pretrain_optimizer(self.resnet.fc.parameters(), self.op.momentum, self.op.weight_decay, self.op.learning_rate, lars=True)
+        # return Adam(self.parameters(), lr=self.op.learning_rate)

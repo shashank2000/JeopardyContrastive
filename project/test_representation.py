@@ -34,10 +34,8 @@ def run(vocab_sz, checkpoint, config_path, hundred_epochs=False, parent_config=N
     model, dm = None, None
     if config.mtype == "vqa":
         # TODO: num_samples stuff here
-        dumb_transf = ("fancier_jeop_test" not in config.exp_name)
-        answer_classes = 0
-        if dumb_transf:
-            answer_classes = config.answer_classes
+        dumb_transf = ("fancier_jeop_test" not in config.exp_name) # everything else is dumb
+        answer_classes = config.answer_classes
         dm = VQADataModule(num_answers=answer_classes, batch_size=config.optim_params.batch_size, num_workers=config.num_workers, dumb_transfer=dumb_transf, transfer=True)
         # the models get the number of answer classes from the config file
         if config.exp_name == "vqa_baseline":
@@ -70,7 +68,7 @@ if __name__ == "__main__":
     parser.add_argument('checkpoint', type=str, default=None)
     parser.add_argument('vocab_size', type=int, default=20541)
     parser.add_argument('parent_config', type=str, default="config/jeopardy_model.json") # to pass in while loading model
-    parser.add_argument('--gpu-device', type=int, default=0)
+    parser.add_argument('--gpu-device', type=int, default=8)
     parser.add_argument('-l', action='store_true', 
     help="run a larger number of epochs for this run")
     args = parser.parse_args()

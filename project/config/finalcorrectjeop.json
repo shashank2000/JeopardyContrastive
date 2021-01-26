@@ -1,7 +1,7 @@
 {
     "exp_base": "/mnt/fs5/shashank2000",
     "exp_name": "final_jeop_model_correct_padding_sanity_check",
-    "run_name": "sanity check",
+    "run_name": "single layer RNN, final final final",
     "system": "regular-jeopardy",
     "cuda": true,
     "gpu_device": 8,

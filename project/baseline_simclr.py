@@ -20,11 +20,14 @@ class UpperBoundModel(pl.LightningModule):
       # for images, we use resnet18, and modify the number of output classes
       self.image_feature_extractor = resnet18(pretrained=False)
 
-      self.image_feature_extractor.fc = Projection(input_dim=512, hidden_dim=mp.proj_hidden, output_dim=mp.proj_output)
+      self.image_feature_extractor.fc = nn.Sequential(
+        nn.Linear(512, mp.image_size),     
+        Projection(input_dim=mp.image_size, hidden_dim=mp.proj_hidden, output_dim=mp.proj_output)
+      )
 
       # compute iters per epoch
       train_iters_per_epoch = num_samples // self.op.batch_size
-
+      breakpoint()
       self.lr_schedule = pretrain_scheduler(
         self.op.learning_rate, train_iters_per_epoch, 
         config.num_epochs, config.scheduler_params

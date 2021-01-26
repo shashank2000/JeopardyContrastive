@@ -15,10 +15,6 @@ zero_v = torch.zeros(num_hidden)
 rand_v = torch.randn(num_hidden)
 for word in tqdm(word2idx):
     i = word2idx[word]
-    val = None
-    if word not in glove:
-        val = rand_v
-    else:
-        val = torch.from_numpy(glove[word])
+    val = torch.from_numpy(glove[word])
     float_tensor[i] = val
 torch.save(float_tensor, '/home/shashank2000/synced/project/emb_weights_1.data')

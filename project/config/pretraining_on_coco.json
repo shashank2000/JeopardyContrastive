@@ -10,7 +10,8 @@
     "seed": 1337,
     "model_params": {
         "proj_output": 128,
-        "proj_hidden": 512
+        "proj_hidden": 512,
+        "image_size": 256
     },
     "loss_params": {
         "loss": "SimCLR",

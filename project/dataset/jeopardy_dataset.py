@@ -14,7 +14,7 @@ PAD_TOKEN = "<pad>"
 UNK_TOKEN = "<unk>"
 
 class JeopardyDataset(Dataset):
-    def __init__(self, questions_file, answers_file, images_dir, transform, word2idx=None, train=True, q_len=8, ans_len=2, test_split=0.2, dumb_transfer=False, most_common_answers=None, num_answers=0, frequency_threshold=10):
+    def __init__(self, questions_file, answers_file, images_dir, transform, word2idx=None, train=True, q_len=8, ans_len=2, test_split=0.2, dumb_transfer=False, most_common_answers=None, num_answers=0, frequency_threshold=8):
         """
         Args:
             questions_file (string): Path to the json file with questions.
@@ -58,6 +58,7 @@ class JeopardyDataset(Dataset):
             
         questions_dict = {q['question_id']: (q["question"], int(q["image_id"])) for q in self.questions}
         self.images_dir = images_dir
+
         self.image_id_to_filename = self._find_images()
         self.transform = transform
         self.most_common_answers = most_common_answers        
@@ -107,7 +108,9 @@ class JeopardyDataset(Dataset):
         
     def _find_frequent_answers(self, threshold, only_one_word_answers=True, only_yes_confidence=False):
         '''
-            Not sure what the specific future use case of this is
+            We create a set of answers across the dataset such that each member of this set has been the answer
+            to a question at least _threshold_ times. This is done so we are working with a smaller more refined 
+            answer set at the end of the day. 
         '''
         # build a list of all the tokens, 10*num_answers in length because each answer has 10 tokens
         from collections import Counter
@@ -128,12 +131,13 @@ class JeopardyDataset(Dataset):
                         # needs to be among candidate answers, if not the answer is just the UNK token
                             continue
                     word_freq[actual_ans] += 1
-        
+    
         if self.dumb_transfer and self.train:
             from collections import Counter
             most_common_answers = Counter(word_freq).most_common(self.num_answers)
             mca_as_list = [k[0] for k in most_common_answers] # don't really care about the frequencies
             self.most_common_answers = {w:i for i, w in enumerate(mca_as_list)}
+
         return set([word for word in word_freq if word_freq[word] >= threshold])
 
     def _build_word2idx(self, vocab):
@@ -232,13 +236,13 @@ class JeopardyDataset(Dataset):
 
     def _find_images(self):
         id_to_filename = {}
+        # slightly different preprocessing in EC2
         for filename in os.listdir(self.images_dir):
             if not filename.endswith('.jpg'):
                 continue
             id_and_extension = filename.split('_')[-1]
             image_id = int(id_and_extension.split('.')[0])
             id_to_filename[image_id] = filename
-
         return id_to_filename
 
     def vocabulary_length(self):

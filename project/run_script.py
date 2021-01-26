@@ -9,7 +9,7 @@ from baseline_data_module import BaselineDataModule
 from baseline_simclr import UpperBoundModel
 import subprocess
 from PIL import ImageFile
-
+from pytorch_lightning.accelerators.ddp_accelerator import DDPAccelerator
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class RealTimeEvalCallback(pl.Callback):
@@ -20,9 +20,9 @@ class RealTimeEvalCallback(pl.Callback):
         self.parent_config = parent_config
         self.downstream2=d2
         self.commands1 = lambda cur_checkpoint: ["python", "test_representation.py", self.downstream_task_config, cur_checkpoint, 
-                        self.vocab_sz, self.parent_config, "--gpu-device", "1"]
+                        self.vocab_sz, self.parent_config, "--gpu-device", "3"]
         self.commands2 = lambda cur_checkpoint: ["python", "test_representation.py", self.downstream2, cur_checkpoint,
-                        self.vocab_sz, self.parent_config, "--gpu-device", "2"]    
+                        self.vocab_sz, self.parent_config, "--gpu-device", "3"]    
 
     def on_fit_end(self, trainer, pl_module):
         cur = trainer.current_epoch
@@ -69,12 +69,13 @@ def run(config_path, gpu_device=None):
 
     trainer = pl.Trainer(
         default_root_dir=config.exp_dir,
-        gpus=[gpu_device],
+        gpus=[6,7],
         max_epochs=config.num_epochs,
         checkpoint_callback=ckpt_callback,
+        distributed_backend='ddp',
         # callbacks=[eval_realtime_callback],
         resume_from_checkpoint=config.continue_from_checkpoint,
-        logger=wandb_logger
+        logger=wandb_logger,
     )
 
     trainer.fit(model, dm)

@@ -121,6 +121,5 @@ class SimpleClassifier(pl.LightningModule):
 
     def configure_optimizers(self):
       # TODO: add exclude_bn_bias flag
-      breakpoint()
       return pretrain_optimizer(self.resnet.fc.parameters(), self.op.momentum, self.op.weight_decay, self.op.learning_rate, lars=True)
         # return Adam(self.parameters(), lr=self.op.learning_rate)

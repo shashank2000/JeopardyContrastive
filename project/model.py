@@ -1,4 +1,4 @@
-from torch.nn import Linear, Tanh, LSTM, Embedding, Sequential, ReLU
+from torch.nn import Linear, Tanh, LSTM, Embedding, Sequential, ReLU, BatchNorm1d
 from torch.optim import SGD, Adam
 # from pytorch_lightning import LightningModule, EvalResult, TrainResult
 import pytorch_lightning as pl
@@ -28,10 +28,14 @@ class JeopardyModel(pl.LightningModule):
       self.tau = mp.tau
       # initialize with Glove embeddings to have accuracy skyrocket
       emb_layer = get_pretrained_emb_layer(emb_layer_file)
-      self.i_h = Embedding.from_pretrained(emb_layer, padding_idx=400000-1) # verify padding index is 0  
+      self.i_h = Embedding.from_pretrained(emb_layer, padding_idx=400000-1)
 
-      self.h_o = Linear(self.n_hidden, self.question_dim)
-      self.h = None 
+      self.h_o = Sequential(
+        Linear(2*self.n_hidden, self.question_dim),
+        ReLU(),
+        Linear(self.question_dim, self.question_dim)
+      )
+      
       self.ans_final = Linear(self.n_hidden, self.ans_dim)
       if self.n_layers > 1:
         self.rnn = LSTM(self.n_hidden, self.n_hidden, self.n_layers, dropout=0.5, batch_first=False)
@@ -39,12 +43,9 @@ class JeopardyModel(pl.LightningModule):
         self.rnn = LSTM(self.n_hidden, self.n_hidden)
 
       self.image_feature_extractor = resnet18(pretrained=False)
-      self.projection_head = Projection(self.question_dim, mp.proj_hidden, mp.proj_output)
-      # so it'll stop complaining:
-      # self.projection_head = Projection(256, 256, 128)
-      breakpoint()
       self.image_feature_extractor.fc = Linear(512, self.im_vec_dim)
-
+      self.projection_head = Projection(self.question_dim, mp.proj_hidden, mp.proj_output)
+      
       # compute iters per epoch
       train_iters_per_epoch = num_samples // self.op.batch_size
 
@@ -57,14 +58,11 @@ class JeopardyModel(pl.LightningModule):
       return self.image_feature_extractor(x)
 
     def forward_question(self, x):
-      # we have a question as input
-      if not self.h:
-        batch_size = x.shape[1]
-        self.h = torch.zeros(1, batch_size, self.n_hidden, device=self.device), torch.zeros(1, batch_size, self.n_hidden, device=self.device) # h0, c0
-      output, h = self.rnn(self.i_h(x), self.h)
-      self.h = h[0].detach(), h[1].detach()
-      # res is currently of the form (10, 256, 50); we only want the last word predictions
-      res = self.h_o(output)[-1] # why of the final state again????
+      # we have a question as input, and take the final hidden state as output
+      _, (hn, cn) = self.rnn(self.i_h(x)) # hidden state has 50 features, is this enough?
+      # concatenate and transpose
+      res = torch.cat((hn.squeeze(), cn.squeeze()), dim=1) # hn and cn are now both shape 256, 50
+      res = self.h_o(res)
       return res
 
     def forward_answer(self, x):
@@ -74,13 +72,14 @@ class JeopardyModel(pl.LightningModule):
         
     def training_step(self, batch, batch_idx):
       loss = self.shared_step(batch)
-      self.log("train_loss", loss, prog_bar=True)
+      self.log("train_loss", loss, prog_bar=True, sync_dist=True)
       return loss 
 
     def shared_step(self, batch):
       question, image, answer = batch
       question = torch.stack(question) # becomes (10, 256) vector
       
+      # verify padding index is 0, look at an example input
       f_q = self.forward_question(question)
       f_q = self.projection_head(f_q)
 

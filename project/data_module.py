@@ -56,6 +56,8 @@ class VQADataModule(LightningDataModule):
                             std=[0.247, 0.243, 0.261]),
                 ]
                 )  
+    
+    # read env variables here
     self.questions_file = "/data5/shashank2000/final_json/OpenEnded_mscoco_train2014_questions.json"
     self.answers_file = "/data5/shashank2000/final_json/mscoco_train2014_annotations.json"
     self.coco_loc = "/mnt/fs0/datasets/mscoco/train2014"    

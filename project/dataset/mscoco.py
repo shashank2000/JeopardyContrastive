@@ -15,6 +15,9 @@ from torchvision import transforms
 MSCOCO_ROOT = os.environ.get('COCO_ROOT')
 Image.MAX_IMAGE_PIXELS = None
 
+'''
+We only ever load this dataset from EC2, so always 2014 stuff
+'''
 class MSCOCO(data.Dataset):
     NUM_CLASSES = 80
     FILTER_SIZE = 32
@@ -60,9 +63,9 @@ class BaseMSCOCO(data.Dataset):
 
     def load_coco(self):
         # TODO: perhaps you can change this to 2014
-        image_dir_name = ('train2017' if self.train else 'val2017')
+        image_dir_name = ('train2014' if self.train else 'val2017')
         image_dir = join(self.root, image_dir_name)
-        annotation_name = ('instances_train2017.json' if self.train else 'instances_val2017.json')
+        annotation_name = ('instances_train2014.json' if self.train else 'instances_val2014.json')
         annotation_path = join(self.root, 'annotations', annotation_name)
 
         with open(annotation_path, 'r') as json_file:
@@ -78,12 +81,13 @@ class BaseMSCOCO(data.Dataset):
         return instance_annotations, coco_cat_id_to_label
 
     def load_images(self, annotations, coco_cat_id_to_label):
-        image_dir_name = ('train2017' if self.train else 'val2017')
+        image_dir_name = ('train2014' if self.train else 'val2014')
         image_dir = join(self.root, image_dir_name)
+        extra_str = 'COCO_{}_'.format(image_dir_name)
         all_filepaths, all_bboxes, all_labels = [], [], []
         for anno in annotations:
             image_id = anno['image_id']
-            image_path = join(image_dir, '%012d.jpg' % image_id)
+            image_path = join(image_dir, extra_str + '%012d.jpg' % image_id)
             bbox = anno['bbox'].copy()
             bbox[2] = max(bbox[2], 1)
             bbox[3] = max(bbox[3], 1)

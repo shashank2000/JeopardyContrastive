@@ -81,14 +81,16 @@ class JeopardyModelv2(pl.LightningModule):
       return loss 
 
     def shared_step(self, batch):
-      question, image, answer = batch
+      question, image1, image2,  answer = batch
       question = torch.stack(question) # becomes (10, 256) vector
-      # different augmentations here
-      im_vector = self(image)
+       # different augmentations here
+      im_vector = self(image1)
+      im_vector2 = self(image2)
       f_a = self.forward_answer(answer)
       f_q = self.forward_question(question)
       image_q = torch.cat((f_q, im_vector), 1)
       image_a = torch.cat((f_a, im_vector), 1)
+      image_a = torch.cat((f_a, im_vector2), 1)
       image_q = self.projection_head(image_q)
       image_a = self.projection_head(image_a)
       loss = SimCLR(image_a, image_q, self.tau).get_loss()

@@ -9,8 +9,12 @@ python test_representation.py config/stl10transfer.json /mnt/fs5/shashank2000/ex
 python test_representation.py config/vqatestbaseline.json /mnt/fs5/shashank2000/experiments/lars_cosine_all_correct/checkpoints/epoch=199.ckpt 20541 config/pretraining_on_coco.json --gpu-device 7
 python test_representation.py config/imagenettransfer.json /mnt/fs5/shashank2000/experiments/lars_cosine_all_correct/checkpoints/epoch=199.ckpt 20541 config/pretraining_on_coco.json --gpu-device 9
 python test_representation.py config/vqatest.json /mnt/fs5/shashank2000/experiments/final_jeop_model_correct_padding/checkpoints/epoch=199.ckpt 20541 config/finalcorrectjeop.json --gpu-device 7
+python test_representation.py config/dumbjeoptest.json /mnt/fs5/shashank2000/aws/epoch=197.ckpt 20541 config/finalcorrectjeop.json 
 
-python test_representation.py config/cocotransfer.json /home/ubuntu/jeop_checkpoint/epoch=199.ckpt 20541 config/finalcorrectjeop.json --gpu-device 0
+python test_representation.py config/cocotransferlars.json /home/ubuntu/checkpoints/experiments/BIGEC2lars_cosine_all_correct/checkpoints/epoch=198.ckpt 20541 config/pretraining_on_coco.json
+python test_representation.py config/cocotransferlars.json /home/ubuntu/checkpoints/experiments/ec2_final_jeop_model_correct_padding/checkpoints/epoch=197.ckpt 20541 config/finalcorrectjeop.json
+python test_representation.py config/vqatestbaseline.json /home/ubuntu/checkpoints/experiments/BIGEC2lars_cosine_all_correct/checkpoints/epoch=198.ckpt 20541 config/pretraining_on_coco.json
+python test_representation.py config/cocotransferlars.json /mnt/fs5/shashank2000/aws/coco-final-ckpt 20541 config/pretraining_on_coco.json
 
 # Steps
 # rerun model with transforms

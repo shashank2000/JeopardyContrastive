@@ -42,7 +42,7 @@ def _process_config(config_json, override_dotmap=None):
 
     # Uncomment me if you wish to not overwrite
     # timestamp = strftime('%Y-%m-%d--%H_%M_%S', localtime())
-    exp_dir = os.path.join(config.exp_base, "experiments", config.exp_name)
+    exp_dir = os.path.join(os.environ.get('EXP_BASE'), "experiments", config.exp_name)
     config.exp_dir = exp_dir
 
     # create some important directories to be used for the experiment.

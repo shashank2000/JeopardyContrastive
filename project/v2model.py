@@ -7,14 +7,19 @@ from loss_func.simclr import SimCLR
 import torch
 from torchvision import transforms 
 from utils.model_utils import pretrain_optimizer, Projection, get_pretrained_emb_layer, pretrain_scheduler
-import os
+
 import numpy as np
 import math
 from pytorch_lightning.utilities import AMPType
 from torch.optim.optimizer import Optimizer
 
-class JeopardyModel(pl.LightningModule):
-    def __init__(self, vocab_sz, config, num_samples=1000):
+class JeopardyModelv2(pl.LightningModule):
+    '''
+    Key idea - we compare a question-image with the corresponding answer-image, and apply augmentations on the image as SimCLR does!
+    TODO: play around different dimension sizes for image-text
+    '''
+
+    def __init__(self, vocab_sz, config, num_samples=1000, emb_layer_file='/home/shashank2000/synced/project/emb_weights_1.data'):
       # next step - 'element-wise product was FAR superior to a concatenation' - but not sure what that would look like in practice with Glove Embeddings
       super().__init__()
       self.save_hyperparameters()
@@ -27,7 +32,7 @@ class JeopardyModel(pl.LightningModule):
       self.n_layers = mp.n_layers # in case we want multilayer RNN
       self.tau = mp.tau
       # initialize with Glove embeddings to have accuracy skyrocket
-      emb_layer = get_pretrained_emb_layer(os.environ.get('GLOVE_LOC'))
+      emb_layer = get_pretrained_emb_layer(emb_layer_file)
       self.i_h = Embedding.from_pretrained(emb_layer, padding_idx=400000-1)
 
       self.h_o = Sequential(
@@ -44,7 +49,7 @@ class JeopardyModel(pl.LightningModule):
 
       self.image_feature_extractor = resnet18(pretrained=False)
       self.image_feature_extractor.fc = Linear(512, self.im_vec_dim)
-      self.projection_head = Projection(self.question_dim, mp.proj_hidden, mp.proj_output)
+      self.projection_head = Projection(self.im_vec_dim + self.question_dim, mp.proj_hidden, mp.proj_output)
       
       # compute iters per epoch
       train_iters_per_epoch = num_samples // self.op.batch_size
@@ -78,16 +83,15 @@ class JeopardyModel(pl.LightningModule):
     def shared_step(self, batch):
       question, image, answer = batch
       question = torch.stack(question) # becomes (10, 256) vector
-      
-      # verify padding index is 0, look at an example input
-      f_q = self.forward_question(question)
-      f_q = self.projection_head(f_q)
-
-      f_a = self.forward_answer(answer)
+      # different augmentations here
       im_vector = self(image)
-      answer_image_vector = torch.cat((f_a, im_vector), 1)
-      answer_image_vector = self.projection_head(answer_image_vector)
-      loss = SimCLR(answer_image_vector, f_q, self.tau).get_loss()
+      f_a = self.forward_answer(answer)
+      f_q = self.forward_question(question)
+      image_q = torch.cat((f_q, im_vector), 1)
+      image_a = torch.cat((f_a, im_vector), 1)
+      image_q = self.projection_head(image_q)
+      image_a = self.projection_head(image_a)
+      loss = SimCLR(image_a, image_q, self.tau).get_loss()
       return loss
 
     def optimizer_step(

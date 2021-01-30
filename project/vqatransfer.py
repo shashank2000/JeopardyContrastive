@@ -22,12 +22,11 @@ class DumbJeopardyTest(pl.LightningModule):
             self.main_model = JeopardyModel2.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
         else:
             self.main_model = JeopardyModel.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
-            
+
         self.op = config.optim_params
         self.main_model.freeze()
-        self.q_rnn = self.main_model.rnn
-        self.q_embed = self.main_model.i_h # learned embedding layer, was initialized to Glove Embeddings in pretrained task
-        self.h = self.main_model.h
+        self.rnn = self.main_model.rnn
+        self.i_h = self.main_model.i_h # learned embedding layer, was initialized to Glove Embeddings in pretrained task
 
         self.resnet = self.main_model.image_feature_extractor
 
@@ -47,7 +46,6 @@ class DumbJeopardyTest(pl.LightningModule):
         
         self.fine_tune = nn.Linear(input_dim, config.answer_classes + 1) # for the ones that don't fit any of the classes
             
-        self.h = None
         
     def forward(self, x):
         x = self.fine_tune(x)
@@ -59,9 +57,13 @@ class DumbJeopardyTest(pl.LightningModule):
         return self.fine_tune_image(x)
 
     def forward_question(self, x):
-        res, h = self.q_rnn(self.q_embed(x), self.h) 
-        self.h = h[0].detach(), h[1].detach()
-        return self.h_o(res)
+        # we have a question as input, and take the final hidden state as output
+        _, (hn, cn) = self.rnn(self.i_h(x)) # hidden state has 50 features, is this enough?
+        # concatenate and transpose
+        breakpoint()
+        res = torch.cat((hn.squeeze(), cn.squeeze()), dim=1) # hn and cn are now both shape 256, 50
+        res = self.h_o(res)
+        return res
 
     def training_step(self, batch, batch_idx):
         loss = self.shared_step(batch)
@@ -78,10 +80,8 @@ class DumbJeopardyTest(pl.LightningModule):
         # transform answer so everything is < num_answers
         question = torch.stack(question)
         f_q = self.forward_question(question) # its 10, 256, 256
-        f_q = f_q.squeeze()[-1, :] # still doubt whether taking the final layer is the way to go
         im_vector = self.forward_image(image)
         im_vector = im_vector.squeeze()
-
         # TODO: "element-wise product was FAR superior to a concatenation"
         question_image_vector = torch.cat((f_q, im_vector), 1)
         # question_image_vector = f_q * im_vector

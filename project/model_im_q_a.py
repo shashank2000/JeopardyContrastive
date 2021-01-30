@@ -21,7 +21,6 @@ class JeopardyModel2(pl.LightningModule):
 
       self.i_h = Embedding(vocab_sz, self.n_hidden, padding_idx=0)  
       self.h_o = Linear(self.n_hidden, self.question_dim)
-      self.h = None 
       self.ans_final = Linear(self.n_hidden, self.ans_dim)
       if self.n_layers > 1:
         self.rnn = LSTM(self.n_hidden, self.n_hidden, self.n_layers)
@@ -36,13 +35,12 @@ class JeopardyModel2(pl.LightningModule):
       return self.image_feature_extractor(x)
 
     def forward_question(self, x):
-      # we have a question as input
-      if not self.h:
-        batch_size = x.shape[1]
-        self.h = torch.zeros(1, batch_size, self.n_hidden, device=self.device), torch.zeros(1, batch_size, self.n_hidden, device=self.device) # h0, c0
-      res, h = self.rnn(self.i_h(x), self.h)
-      self.h = h[0].detach(), h[1].detach()
-      return self.h_o(res)
+     # we have a question as input
+     _, (hn, cn) = self.rnn(self.i_h(x)) # hidden state has 50 features, is this enough?
+     # concatenate and transpose
+     res = torch.cat((hn.squeeze(), cn.squeeze()), dim=1) # hn and cn are now both shape 256, 50
+     res = self.h_o(res)
+     return res
 
     def forward_answer(self, x):
       # just a linear layer over the embeddings to begin with
@@ -59,7 +57,6 @@ class JeopardyModel2(pl.LightningModule):
       question, image, answer = batch
       question = torch.stack(question)
       f_q = self.forward_question(question)
-      f_q = f_q.squeeze()[-1, :]
       f_a = self.forward_answer(answer)
       im_vector = self(image)
       question_image_vector = torch.cat((f_q, im_vector), 1)

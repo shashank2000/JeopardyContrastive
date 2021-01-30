@@ -158,5 +158,5 @@ def get_pretrained_emb_layer(file_loc):
     # how many words in my lookup table/ how large is the vocabulary?
     with open(f'{file_loc}', 'rb') as f:
         # arr = pickle.load(f)
-        arr = torch.load(f, map_location={'cuda:1':'cuda:4'})
+        arr = torch.load(f, map_location={'cuda:1':'cuda:4'}) # remove this in ec2
         return arr

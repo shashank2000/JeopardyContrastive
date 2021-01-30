@@ -14,7 +14,7 @@ PAD_TOKEN = "<pad>"
 UNK_TOKEN = "<unk>"
 
 class JeopardyDataset(Dataset):
-    def __init__(self, questions_file, answers_file, images_dir, transform, word2idx=None, train=True, q_len=8, ans_len=2, test_split=0.2, dumb_transfer=False, most_common_answers=None, num_answers=0, frequency_threshold=8):
+    def __init__(self, questions_file, answers_file, images_dir, transform, word2idx=None, train=True, q_len=8, ans_len=2, test_split=0.2, dumb_transfer=False, most_common_answers=None, num_answers=0, frequency_threshold=8, multiple_images=False):
         """
         Args:
             questions_file (string): Path to the json file with questions.
@@ -31,7 +31,7 @@ class JeopardyDataset(Dataset):
 
         """
         self.dumb_transfer = dumb_transfer
-
+        self.multiple_images = multiple_images
         # initializing the lengths of our questions and answers
         self.q_len = q_len
         self.ans_len = ans_len
@@ -183,7 +183,7 @@ class JeopardyDataset(Dataset):
         
     def _get_glove_indices(self):
         import pickle
-        GLOVE_LOC = '/data5/shashank2000/6B.50_idx.pkl'
+        GLOVE_LOC = os.environ.get('GLOVE_LOC')
         with open(f'{GLOVE_LOC}', 'rb') as f:
             glove_dict = pickle.load(f)
         return glove_dict
@@ -263,6 +263,9 @@ class JeopardyDataset(Dataset):
         question, image_id, answer = self.return_array[idx]
         path = os.path.join(self.images_dir, self.image_id_to_filename[image_id])
         img = self.transform(Image.open(path).convert('RGB'))
+        if self.multiple_images:
+            img2 = self.transform(Image.open(path).convert('RGB'))
+            return question, img, img2, answer
         return question, img, answer
 
 # to download glove weights:

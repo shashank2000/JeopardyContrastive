@@ -4,6 +4,7 @@ from utils.setup import process_config
 import pytorch_lightning as pl
 from model import JeopardyModel
 from model_im_q_a import JeopardyModel2
+from v2model import JeopardyModelv2
 from data_module import VQADataModule
 from baseline_data_module import BaselineDataModule
 from baseline_simclr import UpperBoundModel
@@ -20,9 +21,9 @@ class RealTimeEvalCallback(pl.Callback):
         self.parent_config = parent_config
         self.downstream2=d2
         self.commands1 = lambda cur_checkpoint: ["python", "test_representation.py", self.downstream_task_config, cur_checkpoint, 
-                        self.vocab_sz, self.parent_config, "--gpu-device", "3"]
+                        self.vocab_sz, self.parent_config, "--gpu-device", "7"]
         self.commands2 = lambda cur_checkpoint: ["python", "test_representation.py", self.downstream2, cur_checkpoint,
-                        self.vocab_sz, self.parent_config, "--gpu-device", "3"]    
+                        self.vocab_sz, self.parent_config, "--gpu-device", "7"]    
 
     def on_fit_end(self, trainer, pl_module):
         cur = trainer.current_epoch
@@ -63,17 +64,19 @@ def run(config_path, gpu_device=None):
     else:
         if config.system == "inverse-jeopardy":
             model = JeopardyModel2(dm.vl, config)
-        else:  
+        elif config.system == "v2-jeopardy":  
+            model = JeopardyModelv2(dm.vl, config, num_samples=num_samples)
+        else:
             model = JeopardyModel(dm.vl, config, num_samples=num_samples)
-        # eval_realtime_callback = RealTimeEvalCallback(config.checkpoint_dir, config.downstream_task_config, dm.vl, config_path, d2=my_d2)
+        eval_realtime_callback = RealTimeEvalCallback(config.checkpoint_dir, config.downstream_task_config, dm.vl, config_path, d2=my_d2)
 
     trainer = pl.Trainer(
         default_root_dir=config.exp_dir,
-        gpus=[6,7],
+        gpus=[1,3,6,7],
         max_epochs=config.num_epochs,
         checkpoint_callback=ckpt_callback,
         distributed_backend='ddp',
-        # callbacks=[eval_realtime_callback],
+        callbacks=[eval_realtime_callback],
         resume_from_checkpoint=config.continue_from_checkpoint,
         logger=wandb_logger,
     )

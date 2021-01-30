@@ -12,7 +12,7 @@ import torch
 import torch.utils.data as data
 from torchvision import transforms
 
-MSCOCO_ROOT = '/data5/wumike/coco'
+MSCOCO_ROOT = os.environ.get('COCO_ROOT')
 Image.MAX_IMAGE_PIXELS = None
 
 class MSCOCO(data.Dataset):

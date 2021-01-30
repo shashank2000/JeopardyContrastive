@@ -50,7 +50,8 @@ def run(vocab_sz, checkpoint, config_path, hundred_epochs=False, parent_config=N
         model = SimpleClassifier(checkpoint, process_config(parent_config), config, vocab_sz=vocab_sz, num_samples=len(dm.train_dataset))
     trainer = pl.Trainer(
         default_root_dir=config.exp_dir,
-        gpus=[gpu_device],
+        gpus=[4,5,6,7],
+        distributed_backend='ddp',
         max_epochs=num_epochs,
         checkpoint_callback=ckpt_callback,
         resume_from_checkpoint=config.continue_from_checkpoint,

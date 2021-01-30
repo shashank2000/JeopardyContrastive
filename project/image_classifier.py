@@ -43,7 +43,7 @@ class SimpleClassifier(pl.LightningModule):
         elif parent_config.system == "upper-bound-pretraining":
             self.main_model = UpperBoundModel.load_from_checkpoint(main_model_path, config=parent_config, num_samples=num_samples)
         else:
-            self.main_model = JeopardyModel.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config, emb_layer_file='/home/shashank2000/synced/project/emb_weights_1.data')
+            self.main_model = JeopardyModel.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
         self.main_model.freeze()
         self.resnet = self.main_model.image_feature_extractor
         # confirm it is indeed frozen here
@@ -73,7 +73,6 @@ class SimpleClassifier(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         x, y = batch
         logits = self(x)
-        breakpoint()
         loss = nn.functional.nll_loss(logits, y)
         self.log('train_loss', loss)
         acc = self.train_accuracy(logits, y) 

@@ -183,8 +183,8 @@ class JeopardyDataset(Dataset):
         
     def _get_glove_indices(self):
         import pickle
-        GLOVE_LOC = os.environ.get('GLOVE_LOC')
-        with open(f'{GLOVE_LOC}', 'rb') as f:
+        GLOVE_INDEX_LOC = os.environ.get('GLOVE_INDEX_LOC')
+        with open(f'{GLOVE_INDEX_LOC}', 'rb') as f:
             glove_dict = pickle.load(f)
         return glove_dict
 

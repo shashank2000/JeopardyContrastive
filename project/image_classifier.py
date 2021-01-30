@@ -11,6 +11,7 @@ from torch.optim import SGD, Adam
 from pytorch_lightning.loggers import WandbLogger
 from baseline_simclr import UpperBoundModel
 from utils.model_utils import pretrain_optimizer, pretrain_scheduler
+from v2model import JeopardyModelv2
 
 class SimpleClassifier(pl.LightningModule):
     
@@ -42,6 +43,8 @@ class SimpleClassifier(pl.LightningModule):
             self.main_model = JeopardyModel2.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
         elif parent_config.system == "upper-bound-pretraining":
             self.main_model = UpperBoundModel.load_from_checkpoint(main_model_path, config=parent_config, num_samples=num_samples)
+        elif parent_config.system == "v2-jeopardy":
+            self.main_model = JeopardyModelv2.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
         else:
             self.main_model = JeopardyModel.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
         self.main_model.freeze()

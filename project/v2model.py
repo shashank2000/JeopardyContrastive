@@ -19,7 +19,7 @@ class JeopardyModelv2(pl.LightningModule):
     TODO: play around different dimension sizes for image-text
     '''
 
-    def __init__(self, vocab_sz, config, num_samples=1000, emb_layer_file='/home/shashank2000/synced/project/emb_weights_1.data'):
+    def __init__(self, vocab_sz, config, num_samples=1000):
       # next step - 'element-wise product was FAR superior to a concatenation' - but not sure what that would look like in practice with Glove Embeddings
       super().__init__()
       self.save_hyperparameters()
@@ -32,7 +32,7 @@ class JeopardyModelv2(pl.LightningModule):
       self.n_layers = mp.n_layers # in case we want multilayer RNN
       self.tau = mp.tau
       # initialize with Glove embeddings to have accuracy skyrocket
-      emb_layer = get_pretrained_emb_layer(emb_layer_file)
+      emb_layer = get_pretrained_emb_layer()
       self.i_h = Embedding.from_pretrained(emb_layer, padding_idx=400000-1)
 
       self.h_o = Sequential(

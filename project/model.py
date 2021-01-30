@@ -27,7 +27,7 @@ class JeopardyModel(pl.LightningModule):
       self.n_layers = mp.n_layers # in case we want multilayer RNN
       self.tau = mp.tau
       # initialize with Glove embeddings to have accuracy skyrocket
-      emb_layer = get_pretrained_emb_layer(os.environ.get('GLOVE_LOC'))
+      emb_layer = get_pretrained_emb_layer()
       self.i_h = Embedding.from_pretrained(emb_layer, padding_idx=400000-1)
 
       self.h_o = Sequential(

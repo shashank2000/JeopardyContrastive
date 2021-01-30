@@ -153,10 +153,11 @@ class LARSWrapper(object):
             p.grad.data *= new_lr
 
 import pickle
-def get_pretrained_emb_layer(file_loc):
+def get_pretrained_emb_layer():
     # load from pickle file and return a FloatTensor
     # how many words in my lookup table/ how large is the vocabulary?
+    file_loc = os.environ.get('GLOVE_LOC')
     with open(f'{file_loc}', 'rb') as f:
         # arr = pickle.load(f)
-        arr = torch.load(f, map_location={'cuda:1':'cuda:4'}) # remove this in ec2
+        arr = torch.load(f) # remove this in ec2 - , map_location={'cuda:1':'cuda:4'}
         return arr

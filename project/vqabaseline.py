@@ -20,7 +20,7 @@ def print_sentence(indices, word_index_to_word):
 
 
 class BaselineVQA(pl.LightningModule):
-    def __init__(self, main_model_path, parent_config, config, word_index_to_word, num_samples=1000, num_classes=10000, emb_layer_file='/home/shashank2000/synced/project/emb_weights_1.data'):
+    def __init__(self, main_model_path, parent_config, config, word_index_to_word, num_samples=1000, num_classes=10000):
         '''
             The idea with the VQA baseline is that we take the SimCLR ResNet, and take the average Glove embedding for the question,
             and finally predict the answer using those two vectors (concatenated).
@@ -38,7 +38,7 @@ class BaselineVQA(pl.LightningModule):
         self.op = config.optim_params
         self.mp = config.model_params
 
-        emb_layer = get_pretrained_emb_layer(emb_layer_file)
+        emb_layer = get_pretrained_emb_layer()
         self.i_h = Embedding.from_pretrained(emb_layer, padding_idx=400000-1) 
 
         self.resnet = self.main_model.image_feature_extractor

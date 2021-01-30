@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from torch import nn
 import numpy as np
 import math
+import os 
 
 def pretrain_optimizer(parameters, momentum, weight_decay, lr, lars=True):
     '''

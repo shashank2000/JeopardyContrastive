@@ -67,9 +67,9 @@ class VQADataModule(LightningDataModule):
     saved_test_file = 'test{}.pt'.format(self.is_dumb(dumb_transfer, num_answers, multiple_images))
 
     try:
-        print("found file")
         self.train_dataset = torch.load(saved_train_file)
         self.test_dataset = torch.load(saved_test_file)
+        print("found files")
     except:
         print(saved_train_file + " not found")
         self.train_dataset = JeopardyDataset(

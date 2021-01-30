@@ -19,6 +19,7 @@
         "proj_output": 128,
         "threshold": 10
     },
+    "multiple_images": true,
     "loss_params": {
         "loss": "SimCLR",
         "t": 0.1

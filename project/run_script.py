@@ -49,9 +49,12 @@ def run(config_path, gpu_device=None):
         save_top_k=-1, # could be 5, and that would work fine
         period=1,
     )
+    multiple_images = False
+    if config.multiple_images:
+        multiple_images=True
 
     wandb_logger = pl.loggers.WandbLogger(name=config.run_name, project=config.exp_name)
-    dm = BaselineDataModule(batch_size=config.optim_params.batch_size, num_workers=config.num_workers, dataset_type=config.mtype) if config.system == "upper-bound-pretraining" else VQADataModule(batch_size=config.optim_params.batch_size, num_workers=config.num_workers)
+    dm = BaselineDataModule(batch_size=config.optim_params.batch_size, num_workers=config.num_workers, dataset_type=config.mtype) if config.system == "upper-bound-pretraining" else VQADataModule(batch_size=config.optim_params.batch_size, num_workers=config.num_workers, multiple_images=multiple_images)
     num_samples = len(dm.train_dataset)
     mp = config.model_params
     

@@ -5,6 +5,7 @@ import torch.nn as nn
 from torch.optim.optimizer import Optimizer
 from pytorch_lightning.utilities import AMPType
 from model_im_q_a import JeopardyModel2
+from jointobjective import JeopardyModelv2Joint
 from model import JeopardyModel
 from torchvision import transforms, datasets
 from torch.optim import SGD, Adam
@@ -45,6 +46,8 @@ class SimpleClassifier(pl.LightningModule):
             self.main_model = UpperBoundModel.load_from_checkpoint(main_model_path, config=parent_config, num_samples=num_samples)
         elif parent_config.system == "v2-jeopardy":
             self.main_model = JeopardyModelv2.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
+        elif parent_config.system == "v2-jeopardy":
+            self.main_model = JeopardyModelv2Joint.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
         else:
             self.main_model = JeopardyModel.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
         self.main_model.freeze()

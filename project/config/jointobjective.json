@@ -1,21 +1,22 @@
 {
     "exp_base": "/mnt/fs5/shashank2000",
-    "exp_name": "jeop_contra_random_crop",
-    "run_name": "continuation",
+    "exp_name": "joint_objective_model",
+    "run_name": "v1 test",
     "downstream_task_config": "config/cifar10transfer.json",
-    "downstream_task2_config": "config/cocotransfer.json",
-    "system": "regular-jeopardy",
+    "system": "joint-jeopardy",
     "cuda": true,
     "gpu_device": 8,
     "seed": 1337,
     "model_params": {
-        "im_vec_dim": 128,
+        "im_vec_dim": 256,
         "ans_dim": 128,
         "question_dim": 256,
-        "n_hidden": 128,
+        "n_hidden": 300,
         "n_layers": 1,
         "tau": 0.1,
-        "projection_dim": 256
+        "proj_hidden": 512,
+        "proj_output": 128,
+        "threshold": 10
     },
     "loss_params": {
         "loss": "SimCLR",
@@ -27,9 +28,15 @@
         "momentum": 0.9,
         "weight_decay": 1e-6
     },
+    "scheduler_params": {
+        "start_lr": 0,
+        "final_lr": 0,
+        "warmup_epochs": 10
+    },
+    "multiple_images": true,
     "num_workers": 8,
     "num_epochs": 200,
     "validate": true,
     "copy_checkpoint_freq": 5,
-    "continue_from_checkpoint": "/mnt/fs5/shashank2000/experiments/jeop_contra_random_crop/checkpoints/epoch=163.ckpt"
+    "continue_from_checkpoint": null
 }

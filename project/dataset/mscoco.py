@@ -63,7 +63,7 @@ class BaseMSCOCO(data.Dataset):
 
     def load_coco(self):
         # TODO: perhaps you can change this to 2014
-        image_dir_name = ('train2014' if self.train else 'val2017')
+        image_dir_name = ('train2014' if self.train else 'val2014')
         image_dir = join(self.root, image_dir_name)
         annotation_name = ('instances_train2014.json' if self.train else 'instances_val2014.json')
         annotation_path = join(self.root, 'annotations', annotation_name)
@@ -71,6 +71,7 @@ class BaseMSCOCO(data.Dataset):
         with open(annotation_path, 'r') as json_file:
             annotations = json.load(json_file)
             instance_annotations = annotations['annotations']
+            breakpoint()
             categories = annotations['categories']
             if len(categories) != self.NUM_CLASSES:
                 raise ValueError('Total number of MSCOCO classes %d should be 80')

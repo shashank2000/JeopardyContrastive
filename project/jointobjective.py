@@ -13,7 +13,7 @@ import math
 from pytorch_lightning.utilities import AMPType
 from torch.optim.optimizer import Optimizer
 
-class JeopardyModelv2(pl.LightningModule):
+class JeopardyModelv2Joint(pl.LightningModule):
     '''
     Key idea - we compare a question-image with the corresponding answer-image, and apply augmentations on the image as SimCLR does!
     TODO: play around different dimension sizes for image-text
@@ -49,7 +49,9 @@ class JeopardyModelv2(pl.LightningModule):
 
       self.image_feature_extractor = resnet18(pretrained=False)
       self.image_feature_extractor.fc = Linear(512, self.im_vec_dim)
-      self.projection_head = Projection(self.im_vec_dim + self.question_dim, mp.proj_hidden, mp.proj_output)
+
+      self.smaller_image = Linear(self.im_vec_dim, 128)
+      self.projection_head = Projection(self.question_dim, mp.proj_hidden, mp.proj_output)
       
       # compute iters per epoch
       train_iters_per_epoch = num_samples // self.op.batch_size
@@ -86,13 +88,14 @@ class JeopardyModelv2(pl.LightningModule):
       # different augmentations here
       im_vector = self(image)
       im_vector2 = self(image2)
+      # different dimensions for regular images and images going through jeopardy loss
+      smaller_im_vector = self.smaller_image(im_vector)
       f_a = self.forward_answer(answer)
-      f_q = self.forward_question(question)
-      image_q = torch.cat((f_q, im_vector), 1)
-      image_a = torch.cat((f_a, im_vector2), 1)
-      image_q = self.projection_head(image_q)
+      f_q = self.forward_question(question) # changed the question dim appropriately
+      f_q = self.projection_head(f_q)
+      image_a = torch.cat((f_a, smaller_im_vector), 1)
       image_a = self.projection_head(image_a)
-      loss = SimCLR(image_a, image_q, self.tau).get_loss()
+      loss = SimCLR(im_vector, im_vector2, self.tau).get_loss() + SimCLR(f_q, image_a, self.tau).get_loss()
       return loss
 
     def optimizer_step(

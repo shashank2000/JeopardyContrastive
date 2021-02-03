@@ -11,7 +11,7 @@
         "im_vec_dim": 128,
         "ans_dim": 128,
         "question_dim": 256,
-        "n_hidden": 50,
+        "n_hidden": 300,
         "n_layers": 1,
         "tau": 0.1,
         "proj_hidden": 512,

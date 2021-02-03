@@ -89,7 +89,6 @@ class JeopardyModelv2(pl.LightningModule):
       f_a = self.forward_answer(answer)
       f_q = self.forward_question(question)
       image_q = torch.cat((f_q, im_vector), 1)
-      image_a = torch.cat((f_a, im_vector), 1)
       image_a = torch.cat((f_a, im_vector2), 1)
       image_q = self.projection_head(image_q)
       image_a = self.projection_head(image_a)

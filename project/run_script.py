@@ -8,6 +8,7 @@ from v2model import JeopardyModelv2
 from data_module import VQADataModule
 from baseline_data_module import BaselineDataModule
 from baseline_simclr import UpperBoundModel
+from jointobjective import JeopardyModelv2Joint
 import subprocess
 from PIL import ImageFile
 from pytorch_lightning.accelerators.ddp_accelerator import DDPAccelerator
@@ -69,16 +70,17 @@ def run(config_path, gpu_device=None):
             model = JeopardyModel2(dm.vl, config)
         elif config.system == "v2-jeopardy":  
             model = JeopardyModelv2(dm.vl, config, num_samples=num_samples)
+        elif config.system == "joint-jeopardy":
+            model = JeopardyModelv2Joint(dm.vl, config, num_samples=num_samples)
         else:
             model = JeopardyModel(dm.vl, config, num_samples=num_samples)
         eval_realtime_callback = RealTimeEvalCallback(config.checkpoint_dir, config.downstream_task_config, dm.vl, config_path, d2=my_d2)
 
     trainer = pl.Trainer(
         default_root_dir=config.exp_dir,
-        gpus=[1,3,6,7],
+        gpus=[gpu_device],
         max_epochs=config.num_epochs,
         checkpoint_callback=ckpt_callback,
-        distributed_backend='ddp',
         callbacks=[eval_realtime_callback],
         resume_from_checkpoint=config.continue_from_checkpoint,
         logger=wandb_logger,

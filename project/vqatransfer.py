@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from torch.optim import SGD, Adam
 import torch
 from pytorch_lightning.utilities import AMPType
-
+from v2model import JeopardyModelv2
 from pytorch_lightning.utilities import AMPType
 from torch.optim.optimizer import Optimizer
 
@@ -20,6 +20,8 @@ class DumbJeopardyTest(pl.LightningModule):
         self.save_hyperparameters()
         if parent_config.system == "inverse-jeopardy":
             self.main_model = JeopardyModel2.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
+        elif parent_config.system == "v2-jeopardy":
+            self.main_model = JeopardyModelv2.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
         else:
             self.main_model = JeopardyModel.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
 

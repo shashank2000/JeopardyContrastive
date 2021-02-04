@@ -12,10 +12,11 @@ class SimCLR(object):
         self.t = t
 
     def get_loss(self):
-        breakpoint()
         witness_pos = torch.sum(self.outputs1 * self.outputs2, dim=1)
         outputs12 = torch.cat([self.outputs1, self.outputs2], dim=0)
         witness_partition = self.outputs1 @ outputs12.T 
+        # what if I also tried and maximized the distance between the answer and question-image here?
+        # Or just question answer pair and image?
         witness_partition = torch.logsumexp(witness_partition / self.t, dim=1)
         loss = -torch.mean(witness_pos / self.t - witness_partition)
         return loss

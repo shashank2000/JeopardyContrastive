@@ -17,7 +17,7 @@ class GaussianBlur(object):
         sigma = random.uniform(self.sigma[0], self.sigma[1])
         x = x.filter(ImageFilter.GaussianBlur(radius=sigma))
         return x
-
+        
 class VQADataModule(LightningDataModule):
   def __init__(self, batch_size, threshold=10, num_workers=8, val_split=0.2, dumb_transfer=False, num_answers=0, transfer=False, multiple_images=False):
     super().__init__()

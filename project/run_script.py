@@ -9,6 +9,7 @@ from data_module import VQADataModule
 from baseline_data_module import BaselineDataModule
 from baseline_simclr import UpperBoundModel
 from jointobjective import JeopardyModelv2Joint
+from additionmodel import JeopardyAddModel
 import subprocess
 from PIL import ImageFile
 from pytorch_lightning.accelerators.ddp_accelerator import DDPAccelerator
@@ -72,6 +73,8 @@ def run(config_path, gpu_device=None):
             model = JeopardyModelv2(dm.vl, config, num_samples=num_samples)
         elif config.system == "joint-jeopardy":
             model = JeopardyModelv2Joint(dm.vl, config, num_samples=num_samples)
+        elif config.system == "add-jeopardy":
+            model = JeopardyAddModel(dm.vl, config, num_samples=num_samples)
         else:
             model = JeopardyModel(dm.vl, config, num_samples=num_samples)
         eval_realtime_callback = RealTimeEvalCallback(config.checkpoint_dir, config.downstream_task_config, dm.vl, config_path, d2=my_d2)

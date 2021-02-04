@@ -13,9 +13,11 @@ import math
 from pytorch_lightning.utilities import AMPType
 from torch.optim.optimizer import Optimizer
 
-class JeopardyModel(pl.LightningModule):
+class JeopardyAddModel(pl.LightningModule):
+    '''
+    We compare (question + image1) vs (answer + image2)
+    '''
     def __init__(self, vocab_sz, config, num_samples=1000):
-      # next step - 'element-wise product was FAR superior to a concatenation' - but not sure what that would look like in practice with Glove Embeddings
       super().__init__()
       self.save_hyperparameters()
       mp = config.model_params
@@ -48,7 +50,6 @@ class JeopardyModel(pl.LightningModule):
       
       # compute iters per epoch
       train_iters_per_epoch = num_samples // self.op.batch_size
-      breakpoint()
       self.lr_schedule = pretrain_scheduler(
         self.op.learning_rate, train_iters_per_epoch, 
         config.num_epochs, config.scheduler_params
@@ -76,18 +77,18 @@ class JeopardyModel(pl.LightningModule):
       return loss 
 
     def shared_step(self, batch):
-      question, image, answer = batch
+      question, image1, image2, answer = batch
       question = torch.stack(question) # becomes (10, 256) vector
       
       # verify padding index is 0, look at an example input
       f_q = self.forward_question(question)
-      f_q = self.projection_head(f_q)
+      image1 = self(image1)
+      question_image_vector = self.projection_head(f_q + image1)
 
       f_a = self.forward_answer(answer)
-      im_vector = self(image)
-      answer_image_vector = torch.cat((f_a, im_vector), 1)
-      answer_image_vector = self.projection_head(answer_image_vector)
-      loss = SimCLR(answer_image_vector, f_q, self.tau).get_loss()
+      image2 = self(image2)
+      answer_image_vector = self.projection_head(image2 + f_a)
+      loss = SimCLR(answer_image_vector, question_image_vector, self.tau).get_loss()
       return loss
 
     def optimizer_step(

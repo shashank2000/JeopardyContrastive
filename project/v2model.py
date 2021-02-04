@@ -18,7 +18,7 @@ class JeopardyModelv2(pl.LightningModule):
     Key idea - we compare a question-image with the corresponding answer-image, and apply augmentations on the image as SimCLR does!
     TODO: play around different dimension sizes for image-text
     '''
-
+    
     def __init__(self, vocab_sz, config, num_samples=1000):
       # next step - 'element-wise product was FAR superior to a concatenation' - but not sure what that would look like in practice with Glove Embeddings
       super().__init__()

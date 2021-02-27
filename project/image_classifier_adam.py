@@ -7,6 +7,7 @@ from pytorch_lightning.utilities import AMPType
 from model_im_q_a import JeopardyModel2
 from jointobjective import JeopardyModelv2Joint
 from model import JeopardyModel
+from additionmodel import JeopardyAddModel
 from torchvision import transforms, datasets
 from torch.optim import SGD, Adam
 from pytorch_lightning.loggers import WandbLogger
@@ -14,7 +15,7 @@ from baseline_simclr import UpperBoundModel
 from utils.model_utils import pretrain_optimizer, pretrain_scheduler
 from v2model import JeopardyModelv2
 
-class SimpleClassifier(pl.LightningModule):
+class SimpleClassifierAdam(pl.LightningModule):
     
     def __init__(self, main_model_path, parent_config, config, vocab_sz=None, num_samples=1000):
         '''
@@ -39,6 +40,7 @@ class SimpleClassifier(pl.LightningModule):
         '''
         
         super().__init__()
+
         # or load weights mapping all weights from GPU 1 to GPU 0 ...
         if parent_config.system == "inverse-jeopardy":
             self.main_model = JeopardyModel2.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
@@ -48,6 +50,8 @@ class SimpleClassifier(pl.LightningModule):
             self.main_model = JeopardyModelv2.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
         elif parent_config.system == "joint-jeopardy":
             self.main_model = JeopardyModelv2Joint.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
+        elif parent_config.system == "add-jeopardy":
+            self.main_model = JeopardyAddModel.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
         else:
             self.main_model = JeopardyModel.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
         self.main_model.freeze()
@@ -64,13 +68,6 @@ class SimpleClassifier(pl.LightningModule):
         self.test_accuracy =  pl.metrics.Accuracy()
         self.train_accuracy = pl.metrics.Accuracy() # to check for overfitting!
         self.op = config.optim_params
-
-        # B6: Alternatively, using LARS optimizer with pretraining hyperparams yields similar results
-        train_iters_per_epoch = num_samples // self.op.batch_size
-        self.lr_schedule = pretrain_scheduler(
-            self.op.learning_rate, train_iters_per_epoch, 
-            config.num_epochs, config.scheduler_params
-        )
 
     def forward(self, x):
         x = self.resnet(x)
@@ -95,36 +92,5 @@ class SimpleClassifier(pl.LightningModule):
         self.log('test_loss', loss)
         return loss
 
-    def optimizer_step(
-        self,
-        epoch: int,
-        batch_idx: int,
-        optimizer: Optimizer,
-        optimizer_idx: int,
-        optimizer_closure = None,
-        on_tpu: bool = False,
-        using_native_amp: bool = False,
-        using_lbfgs: bool = False,
-    ) -> None:
-        # warm-up + decay schedule placed here since LARSWrapper is not optimizer class
-        # adjust LR of optim contained within LARSWrapper
-        for param_group in optimizer.optim.param_groups:
-          param_group["lr"] = self.lr_schedule[self.trainer.global_step]
-        
-        # log LR (LearningRateLogger callback doesn't work with LARSWrapper)
-        self.log('learning_rate', self.lr_schedule[self.trainer.global_step], on_step=True, on_epoch=False)
-
-        # from lightning
-        if self.trainer.amp_backend == AMPType.NATIVE:
-            optimizer_closure()
-            self.trainer.scaler.step(optimizer)
-        elif self.trainer.amp_backend == AMPType.APEX:
-            optimizer_closure()
-            optimizer.step()
-        else:
-            optimizer.step(closure=optimizer_closure)
-
     def configure_optimizers(self):
-      # TODO: add exclude_bn_bias flag
-      return pretrain_optimizer(self.resnet.fc.parameters(), self.op.momentum, self.op.weight_decay, self.op.learning_rate, lars=True)
-        # return Adam(self.parameters(), lr=self.op.learning_rate)
+        return Adam(self.parameters(), lr=self.op.learning_rate)

@@ -63,8 +63,8 @@ class VQADataModule(LightningDataModule):
     self.answers_file = os.environ.get('ANSWERS_FILE')
     self.coco_loc = os.environ.get('COCO_LOC')   
     
-    saved_train_file = 'train{}.pt'.format(self.is_dumb(dumb_transfer, num_answers, multiple_images))
-    saved_test_file = 'test{}.pt'.format(self.is_dumb(dumb_transfer, num_answers, multiple_images))
+    saved_train_file = 'train{}_correct_padding.pt'.format(self.is_dumb(dumb_transfer, num_answers, multiple_images))
+    saved_test_file = 'test{}_correct_padding.pt'.format(self.is_dumb(dumb_transfer, num_answers, multiple_images))
 
     try:
         self.train_dataset = torch.load(saved_train_file)

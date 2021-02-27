@@ -162,3 +162,22 @@ def get_pretrained_emb_layer():
         # arr = pickle.load(f)
         arr = torch.load(f) # remove this in ec2 - , map_location={'cuda:1':'cuda:4'}
         return arr
+
+from model_im_q_a import JeopardyModel2
+from model import JeopardyModel
+from v2model import JeopardyModelv2
+from v3model import v3Model
+from v3modelcross import v3ModelCross
+
+def get_main_model(parent_config, main_model_path, vocab_sz):
+    if parent_config.system == "inverse-jeopardy":
+        main_model = JeopardyModel2.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
+    elif parent_config.system == "v2-jeopardy":
+        main_model = JeopardyModelv2.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
+    elif parent_config.system ==  "symmetric-jeopardy":
+        main_model = v3Model.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
+    elif parent_config.system == "symmetric-jeopardy-cross":
+        main_model = v3ModelCross.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
+    else:
+        main_model = JeopardyModel.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
+    return main_model

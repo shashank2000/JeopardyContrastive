@@ -5,6 +5,8 @@ import pytorch_lightning as pl
 from model import JeopardyModel
 from model_im_q_a import JeopardyModel2
 from v2model import JeopardyModelv2
+from v3model import v3Model
+from v3modelcross import v3ModelCross
 from data_module import VQADataModule
 from baseline_data_module import BaselineDataModule
 from baseline_simclr import UpperBoundModel
@@ -75,6 +77,10 @@ def run(config_path, gpu_device=None):
             model = JeopardyModelv2Joint(dm.vl, config, num_samples=num_samples)
         elif config.system == "add-jeopardy":
             model = JeopardyAddModel(dm.vl, config, num_samples=num_samples)
+        elif config.system == "symmetric-jeopardy":
+            model = v3Model(dm.vl, config, num_samples=num_samples)
+        elif config.system == "symmetric-jeopardy-cross":
+            model = v3ModelCross(dm.vl, config, num_samples=num_samples)
         else:
             model = JeopardyModel(dm.vl, config, num_samples=num_samples)
         eval_realtime_callback = RealTimeEvalCallback(config.checkpoint_dir, config.downstream_task_config, dm.vl, config_path, d2=my_d2)

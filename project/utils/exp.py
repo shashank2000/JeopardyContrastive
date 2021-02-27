@@ -9,17 +9,30 @@ python test_representation.py config/stl10transfer.json /mnt/fs5/shashank2000/ex
 python test_representation.py config/vqatestbaseline.json /mnt/fs5/shashank2000/experiments/lars_cosine_all_correct/checkpoints/epoch=199.ckpt 20541 config/pretraining_on_coco.json --gpu-device 7
 python test_representation.py config/imagenettransfer.json /mnt/fs5/shashank2000/experiments/lars_cosine_all_correct/checkpoints/epoch=199.ckpt 20541 config/pretraining_on_coco.json --gpu-device 9
 python test_representation.py config/vqatest.json /mnt/fs5/shashank2000/experiments/final_jeop_model_correct_padding/checkpoints/epoch=199.ckpt 20541 config/finalcorrectjeop.json --gpu-device 7
-python test_representation.py config/dumbjeoptest.json /mnt/fs5/shashank2000/aws/epoch=197.ckpt 20541 config/finalcorrectjeop.json 
+python test_representation.py config/dumbjeoptest.json /mnt/fs5/shashank2000/experiments/reverse_padding_jeopardy/checkpoints/epoch=199.ckpt 20541 config/finalcorrectjeop.json --gpu-device 2
+
+python test_representation.py config/dumbjeoptest.json /mnt/fs5/shashank2000/experiments/v3modelcross/checkpoints/epoch=199.ckpt 20541 config/v3modelcross.json --gpu-device 6
+
 
 python test_representation.py config/cocotransferlars.json /home/ubuntu/checkpoints/experiments/BIGEC2lars_cosine_all_correct/checkpoints/epoch=198.ckpt 20541 config/pretraining_on_coco.json
 python test_representation.py config/cocotransferlars.json /home/ubuntu/checkpoints/experiments/ec2_final_jeop_model_correct_padding/checkpoints/epoch=197.ckpt 20541 config/finalcorrectjeop.json
 python test_representation.py config/vqatestbaseline.json /home/ubuntu/checkpoints/experiments/BIGEC2lars_cosine_all_correct/checkpoints/epoch=198.ckpt 20541 config/pretraining_on_coco.json
 python test_representation.py config/stl10transfer.json /mnt/fs5/shashank2000/aws/coco-final-ckpt 20541 config/pretraining_on_coco.json
-
+python test_representation.py config/cocotransferlars.json /mnt/fs5/shashank2000/aws/join_obj_ckpt138 20541 config/jointobjective.json --gpu-device 3
 python test_representation.py config/imagenettransfer.json /mnt/fs5/shashank2000/aws/epoch=197.ckpt 20541 config/finalcorrectjeop.json
 python test_representation.py config/dumbjeoptest.json /home/ubuntu/checkpoints/experiments/v2model/checkpoints/epoch=176.ckpt 20541 config/v2firstversion.json --gpu-device 1
 python test_representation.py config/imagenettransfer.json /data5/shashank2000/epoch=96.ckptforv2model 20541 config/v2firstversion.json
 python test_representation.py config/cocotransferjeop.json /home/ubuntu/checkpoints/experiments/ec2_final_jeop_model_correct_padding/checkpoints/epoch=197.ckpt 20541 config/finalcorrectjeop.json
+python test_representation.py config/stl10transfer.json /mnt/fs5/shashank2000/aws/join_obj_ckpt138 20541 config/jointobjective.json --gpu-device 7
+python test_representation.py config/stl10transfer.json /mnt/fs5/shashank2000/experiments/v2final_jeop_model/checkpoints/epoch=199.ckpt 20541 config/new_jeopardy_model.json --gpu-device 3
+python test_representation.py config/cocotransfer.json /mnt/fs5/shashank2000/aws/ec2-lars-check 20541 config/jointobjective.json --gpu-device 3
+python test_representation.py config/cocotransferjeop.json /mnt/fs5/shashank2000/experiments/v2final_jeop_model/checkpoints/epoch=199.ckpt 20541 config/new_jeopardy_model.json --gpu-device 3
+
+python test_representation.py config/cocotransfer.json /mnt/fs5/shashank2000/aws/v2finalcheckpoint.ckpt 20541 config/v2firstversion.json --gpu-device 5
+python test_representation.py config/cifar10transfer.json /mnt/fs5/shashank2000/experiments/reverse_padding_jeopardy/checkpoints/epoch=199.ckpt 20541 config/finalcorrectjeop.json --gpu-device 6
+python test_representation.py config/cifar100transfer.json /mnt/fs5/shashank2000/aws/joint_obj_checkpoints/join_obj_ckpt138 20541 config/jointobjective.json --gpu-device 6
+
+python test_representation.py config/cifar100transfer.json /mnt/fs5/shashank2000/aws/addition_model/epoch=109.ckpt 20541 config/addition_model.json --gpu-device 6
 # Steps
 # rerun model with transforms
 # run simclr only with transforms

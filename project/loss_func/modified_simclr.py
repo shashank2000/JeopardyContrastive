@@ -17,4 +17,8 @@ class SimCLR(object):
         witness_partition = self.outputs1 @ outputs12.T
         witness_partition = torch.logsumexp(witness_partition / self.t, dim=1)
         loss = -torch.mean(witness_pos / self.t - witness_partition)
+        similar_but_wrong_questions = get_from_cluster(self.outputs1) # or maybe it makes more sense to pass in to the loss function? 
+        # similar_but_wrong_questions is a k x m matrix, self.outputs2 is the image-answers in the batch
+        similar_but_wrong_questions = l2_normalize(similar_but_wrong_questions, dim=1)
+        loss -= torch.mean(similar_but_wrong_questions @ self.outputs2.T) # the higher this value, the more dissimilar they are, which is what we want
         return loss

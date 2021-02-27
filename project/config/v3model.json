@@ -1,9 +1,9 @@
 {
     "exp_base": "/mnt/fs5/shashank2000",
-    "exp_name": "reverse_padding_jeopardy",
-    "run_name": "opposite padding",
-    "system": "regular-jeopardy",
+    "exp_name": "v3model",
+    "run_name": "first run",
     "downstream_task_config": "config/cifar100transfer.json",
+    "system": "symmetric-jeopardy",
     "cuda": true,
     "gpu_device": 8,
     "seed": 1337,

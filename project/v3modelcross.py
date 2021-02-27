@@ -13,9 +13,15 @@ import math
 from pytorch_lightning.utilities import AMPType
 from torch.optim.optimizer import Optimizer
 
-class JeopardyModel(pl.LightningModule):
+class v3ModelCross(pl.LightningModule):
     def __init__(self, vocab_sz, config, num_samples=1000):
-      # next step - 'element-wise product was FAR superior to a concatenation' - but not sure what that would look like in practice with Glove Embeddings
+      '''
+      Trying symmetric loss
+      (image+question) -> answer (negatives)
+      (image+answer) -> question(negatives)
+      (question+answer) -> image(negatives)
+
+      '''
       super().__init__()
       self.save_hyperparameters()
       mp = config.model_params
@@ -36,14 +42,16 @@ class JeopardyModel(pl.LightningModule):
         Linear(self.question_dim, self.question_dim)
       )
       
-      self.ans_final = Linear(self.n_hidden, self.ans_dim)
+      self.ans_final = Linear(self.n_hidden, self.question_dim)
+      
       if self.n_layers > 1:
         self.rnn = LSTM(self.n_hidden, self.n_hidden, self.n_layers, dropout=0.5, batch_first=False)
       else:
         self.rnn = LSTM(self.n_hidden, self.n_hidden)
 
       self.image_feature_extractor = resnet18(pretrained=False)
-      self.image_feature_extractor.fc = Linear(512, self.im_vec_dim)
+      self.image_feature_extractor.fc = Linear(512, self.question_dim)
+      
       self.projection_head = Projection(self.question_dim, mp.proj_hidden, mp.proj_output)
       
       # compute iters per epoch
@@ -65,30 +73,39 @@ class JeopardyModel(pl.LightningModule):
       return res
 
     def forward_answer(self, x):
-      # just a linear layer over the embeddings to begin with
       x = self.i_h(x)
       return self.ans_final(x)
         
     def training_step(self, batch, batch_idx):
       loss = self.shared_step(batch)
-      self.log("train_loss", loss, prog_bar=True, sync_dist=True)
+      self.log("train_loss", loss, prog_bar=True)
       return loss 
 
     def shared_step(self, batch):
       question, image, answer = batch
       question = torch.stack(question) # becomes (10, 256) vector
       
-      # verify padding index is 0, look at an example input
       f_q = self.forward_question(question)
-      f_q = self.projection_head(f_q)
-
+    
       f_a = self.forward_answer(answer)
-      im_vector = self(image)
-      answer_image_vector = torch.cat((f_a, im_vector), 1)
-      answer_image_vector = self.projection_head(answer_image_vector)
-      loss = SimCLR(answer_image_vector, f_q, self.tau).get_loss()
+      
+      f_im = self(image)
+
+      # (image+question) -> answer (negatives)
+      im_q_vector = f_im * f_q
+      loss = SimCLR(im_q_vector, f_a, self.tau).get_loss()
+
+      # (image+answer) -> question(negatives)
+      im_a_vector = f_im * f_a
+      loss += SimCLR(im_a_vector, f_q, self.tau).get_loss()
+
+      # (question+answer) -> image(negatives)
+      q_a_vector = f_q * f_a
+      loss += SimCLR(q_a_vector, f_im, self.tau).get_loss()
+
       return loss
 
+    
     def optimizer_step(
         self,
         epoch: int,

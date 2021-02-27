@@ -2,14 +2,14 @@
 # pick 100 random indices
 # print question, answer pairs
 import torch
-saved_train_file = "test.pt"
+saved_train_file = "/home/shashank2000/synced/project/test_correct_padding.pt"
 dataset = torch.load(saved_train_file)
 
 idx2word = {v: k for k, v in dataset.word2idx.items()}
 random_idx = torch.randint(0, dataset.i, (100,))
 
 def write_to_disk(stuff):
-    with open('qa_text', 'a') as f:
+    with open('qa_text_correct_padding', 'a') as f:
         f.write(stuff)
         print(stuff)
         f.write('\n')

@@ -11,6 +11,7 @@ else
     export GLOVE_LOC="/data5/shashank2000/emb_weights_1.data"
     export QUESTIONS_FILE="/data5/shashank2000/final_json/OpenEnded_mscoco_train2014_questions.json"
     export ANSWERS_FILE="/data5/shashank2000/final_json/mscoco_train2014_annotations.json"
-    export COCO_LOC="/mnt/fs0/datasets/mscoco/train2014"    
+    export COCO_LOC="/mnt/fs0/datasets/mscoco/train2014"        
+    export COCO_ROOT="/mnt/fs0/datasets/mscoco"    
     export EXP_BASE="/mnt/fs5/shashank2000"
 fi

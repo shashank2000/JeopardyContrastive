@@ -62,7 +62,6 @@ class BaselineDataModule(LightningDataModule):
     
   def get_datasets(self, dataset_type):
     train_dataset, test_dataset = None, None
-
     # no test dataset for contrastive pretraining tasks
     if dataset_type == "coco-contrastive":
       train_dataset = MSCOCO(train=True, image_transforms=self.train_transform)
@@ -117,7 +116,7 @@ class BaselineDataModule(LightningDataModule):
   def train_dataloader(self):
       return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True,
                         num_workers=self.num_workers, pin_memory=True, drop_last=True)
-  
+
   def test_dataloader(self):
       # no test step defined in pretraining, this dataloader is only used by the finetune network
       return DataLoader(self.test_dataset, batch_size=self.batch_size,

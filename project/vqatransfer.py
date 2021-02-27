@@ -2,29 +2,22 @@ from pytorch_lightning import Trainer, seed_everything
 from dataset.mscoco import BaseMSCOCO
 import pytorch_lightning as pl
 import torch.nn as nn
-from model_im_q_a import JeopardyModel2
-from model import JeopardyModel
 from torchvision import transforms, datasets
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.utils.data import DataLoader
 from torch.optim import SGD, Adam
 import torch
 from pytorch_lightning.utilities import AMPType
-from v2model import JeopardyModelv2
 from pytorch_lightning.utilities import AMPType
 from torch.optim.optimizer import Optimizer
+from model_utils import get_main_model
 
 class DumbJeopardyTest(pl.LightningModule):
     def __init__(self, main_model_path, parent_config, config, vocab_sz=None):
         super().__init__()
         self.save_hyperparameters()
-        if parent_config.system == "inverse-jeopardy":
-            self.main_model = JeopardyModel2.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
-        elif parent_config.system == "v2-jeopardy":
-            self.main_model = JeopardyModelv2.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
-        else:
-            self.main_model = JeopardyModel.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
-
+        self.main_model = get_main_model(parent_config, main_model_path, vocab_sz)
+        
         self.op = config.optim_params
         self.main_model.freeze()
         self.rnn = self.main_model.rnn
@@ -62,7 +55,6 @@ class DumbJeopardyTest(pl.LightningModule):
         # we have a question as input, and take the final hidden state as output
         _, (hn, cn) = self.rnn(self.i_h(x)) # hidden state has 50 features, is this enough?
         # concatenate and transpose
-        breakpoint()
         res = torch.cat((hn.squeeze(), cn.squeeze()), dim=1) # hn and cn are now both shape 256, 50
         res = self.h_o(res)
         return res

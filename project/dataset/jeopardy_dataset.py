@@ -14,7 +14,22 @@ PAD_TOKEN = "<pad>"
 UNK_TOKEN = "<unk>"
 
 class JeopardyDataset(Dataset):
-    def __init__(self, questions_file, answers_file, images_dir, transform, word2idx=None, train=True, q_len=8, ans_len=2, test_split=0.2, dumb_transfer=False, most_common_answers=None, num_answers=0, frequency_threshold=8, multiple_images=False):
+    def __init__(self, 
+        questions_file, 
+        answers_file, 
+        images_dir, 
+        transform, 
+        word2idx=None, 
+        train=True, 
+        q_len=8, 
+        ans_len=2, 
+        test_split=0.2, 
+        dumb_transfer=False, 
+        most_common_answers=None, 
+        num_answers=0, 
+        frequency_threshold=8, 
+        multiple_images=False,
+        sbert=False):
         """
         Args:
             questions_file (string): Path to the json file with questions.
@@ -199,7 +214,7 @@ class JeopardyDataset(Dataset):
 
     def _pad_arr(self, arr, length):
         while len(arr) < length:
-            arr.insert(0, PAD_TOKEN)
+            arr.append(PAD_TOKEN)
         
     def _find_answers(self):
         """
@@ -267,35 +282,3 @@ class JeopardyDataset(Dataset):
             img2 = self.transform(Image.open(path).convert('RGB'))
             return question, img, img2, answer
         return question, img, answer
-
-# to download glove weights:
-
-#         if os.stat('/home/shashank2000/synced/project/dataset/emb_weights.data').st_size < 10:
-#             print("downloading glove weights")
-#             import bcolz
-#             import pickle
-#             # init glove here
-#             glove_path = '/data5/shashank2000'
-#             vectors = bcolz.open(f'{glove_path}/6B.50.dat')[:]
-#             words = pickle.load(open(f'{glove_path}/6B.50_words.pkl', 'rb'))
-#             word2idx = pickle.load(open(f'{glove_path}/6B.50_idx.pkl', 'rb'))
-
-#             glove = {w: vectors[word2idx[w]] for w in words}
-
-#             float_tensor = torch.randn(len(word2idx), num_hidden).to("cuda:1")
-#             zero_v = torch.zeros(num_hidden)
-#             rand_v = torch.randn(num_hidden)
-#             for word in tqdm(self.word2idx):
-#                 i = self.word2idx[word]
-#                 val = None
-#                 if word == PAD_TOKEN:
-#                     val = zero_v
-#                 elif word not in glove:
-#                     val = rand_v
-#                 else:
-#                     val = torch.from_numpy(glove[word]).to("cuda:1")
-#                 float_tensor[i] = val
-#             # write to file
-#             torch.save(float_tensor, '/home/shashank2000/synced/project/emb_weights.data')
-# # with open('/home/shashank2000/synced/project/emb_weights.data', 'wb') as filehandle:
-#             #     pickle.dump(float_tensor, filehandle)

@@ -1,4 +1,5 @@
 from image_classifier import SimpleClassifier
+from image_classifier_adam import SimpleClassifierAdam
 from run_script import seed_everything
 import pytorch_lightning as pl 
 from utils.setup import process_config
@@ -47,7 +48,10 @@ def run(vocab_sz, checkpoint, config_path, hundred_epochs=False, parent_config=N
     else:
         dm = BaselineDataModule(batch_size=config.optim_params.batch_size, num_workers=config.num_workers, dataset_type=config.mtype)
         # add len(dm) in here to find num_samples and pass it into the model
-        model = SimpleClassifier(checkpoint, process_config(parent_config), config, vocab_sz=vocab_sz, num_samples=len(dm.train_dataset))
+        if config.adam:
+            model = SimpleClassifierAdam(checkpoint, process_config(parent_config), config,  vocab_sz=vocab_sz, num_samples=len(dm.train_dataset))
+        else:
+            model = SimpleClassifier(checkpoint, process_config(parent_config), config, vocab_sz=vocab_sz, num_samples=len(dm.train_dataset))
     trainer = pl.Trainer(
         default_root_dir=config.exp_dir,
         gpus=[gpu_device],

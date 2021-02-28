@@ -11,7 +11,8 @@ from torchvision import transforms, datasets
 from torch.optim import SGD, Adam
 from pytorch_lightning.loggers import WandbLogger
 from baseline_simclr import UpperBoundModel
-from utils.model_utils import pretrain_optimizer, pretrain_scheduler
+from model_utils import pretrain_optimizer, pretrain_scheduler
+from test_utils import get_main_model
 from v2model import JeopardyModelv2
 
 class SimpleClassifier(pl.LightningModule):
@@ -40,16 +41,7 @@ class SimpleClassifier(pl.LightningModule):
         
         super().__init__()
         # or load weights mapping all weights from GPU 1 to GPU 0 ...
-        if parent_config.system == "inverse-jeopardy":
-            self.main_model = JeopardyModel2.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
-        elif parent_config.system == "upper-bound-pretraining":
-            self.main_model = UpperBoundModel.load_from_checkpoint(main_model_path, config=parent_config, num_samples=num_samples)
-        elif parent_config.system == "v2-jeopardy":
-            self.main_model = JeopardyModelv2.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
-        elif parent_config.system == "joint-jeopardy":
-            self.main_model = JeopardyModelv2Joint.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
-        else:
-            self.main_model = JeopardyModel.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
+        self.main_model = get_main_model(parent_config, main_model_path, vocab_sz)
         self.main_model.freeze()
         self.resnet = self.main_model.image_feature_extractor
         # confirm it is indeed frozen here

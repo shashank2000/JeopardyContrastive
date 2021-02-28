@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from torch.optim import SGD, Adam
 import torch
 from pytorch_lightning.utilities import AMPType
-from utils.model_utils import get_pretrained_emb_layer
+from model_utils import get_pretrained_emb_layer
 from pytorch_lightning.utilities import AMPType
 from torch.optim.optimizer import Optimizer
 from torch.nn import Embedding

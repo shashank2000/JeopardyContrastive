@@ -6,7 +6,7 @@ from torchvision.models import resnet18
 from loss_func.simclr import SimCLR
 import torch
 from torchvision import transforms 
-from utils.model_utils import pretrain_optimizer, Projection, get_pretrained_emb_layer, pretrain_scheduler
+from model_utils import pretrain_optimizer, Projection, get_pretrained_emb_layer, pretrain_scheduler
 
 import numpy as np
 import math

@@ -6,7 +6,7 @@ import pytorch_lightning as pl
 from torchvision.models import resnet18
 from loss_func.simclr import SimCLR
 import torch
-from utils.model_utils import pretrain_optimizer, Projection, pretrain_scheduler
+from model_utils import pretrain_optimizer, Projection, pretrain_scheduler
 import numpy as np
 import math
 

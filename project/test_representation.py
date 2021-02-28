@@ -1,18 +1,9 @@
-from image_classifier import SimpleClassifier
-from image_classifier_adam import SimpleClassifierAdam
 from run_script import seed_everything
 import pytorch_lightning as pl 
 from utils.setup import process_config
-from baseline_data_module import BaselineDataModule
-from data_module import VQADataModule
-from vqatransfer import DumbJeopardyTest
-from realvqatransfer import NNJeopardyTest
-from vqabaseline import BaselineVQA
+from test_utils import get_downstream_model_and_dm
 
 def run(vocab_sz, checkpoint, config_path, hundred_epochs=False, parent_config=None, gpu_device=None):
-    '''
-    TODO: WE ONLY USE RANDOM CROPS AND FLIPS AS AUGMENTATIONS IN TRANSFER! THIS ISN'T HAPPENING YET
-    '''
     config = process_config(config_path)
     if not gpu_device:
         gpu_device = config.gpu_device
@@ -32,26 +23,8 @@ def run(vocab_sz, checkpoint, config_path, hundred_epochs=False, parent_config=N
     wandb_logger = pl.loggers.WandbLogger(name=run_name, config=config, project=config.exp_name)
     # if we are at 100 epochs pretraining, run for 100 epochs 
     # we are using the same transformations as we did in the pretraining task, but this time for regularization etc   
-    model, dm = None, None
-    if config.mtype == "vqa":
-        # TODO: num_samples stuff here
-        dumb_transf = ("fancier_jeop_test" not in config.exp_name) # everything else is dumb
-        answer_classes = config.answer_classes
-        dm = VQADataModule(num_answers=answer_classes, batch_size=config.optim_params.batch_size, num_workers=config.num_workers, dumb_transfer=dumb_transf, transfer=True)
-        # the models get the number of answer classes from the config file
-        if config.exp_name == "vqa_baseline":
-            model = BaselineVQA(checkpoint, process_config(parent_config), config, word_index_to_word=dm.idx_to_word)
-        elif config.exp_name == "dumb_jeop_test":
-            model = DumbJeopardyTest(checkpoint, process_config(parent_config), config, vocab_sz=vocab_sz)
-        else:
-            model = NNJeopardyTest(checkpoint, process_config(parent_config), config, vocab_sz=vocab_sz, answer_tokens=dm.train_dataset.answer_tokens, word_index_to_word=dm.idx_to_word)
-    else:
-        dm = BaselineDataModule(batch_size=config.optim_params.batch_size, num_workers=config.num_workers, dataset_type=config.mtype)
-        # add len(dm) in here to find num_samples and pass it into the model
-        if config.adam:
-            model = SimpleClassifierAdam(checkpoint, process_config(parent_config), config,  vocab_sz=vocab_sz, num_samples=len(dm.train_dataset))
-        else:
-            model = SimpleClassifier(checkpoint, process_config(parent_config), config, vocab_sz=vocab_sz, num_samples=len(dm.train_dataset))
+    model, dm = get_downstream_model_and_dm(config, parent_config, checkpoint, vocab_sz)
+
     trainer = pl.Trainer(
         default_root_dir=config.exp_dir,
         gpus=[gpu_device],
@@ -84,3 +57,4 @@ if __name__ == "__main__":
         parent_config=args.parent_config,
         hundred_epochs=args.l
     )
+

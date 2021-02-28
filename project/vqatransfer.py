@@ -10,16 +10,16 @@ import torch
 from pytorch_lightning.utilities import AMPType
 from pytorch_lightning.utilities import AMPType
 from torch.optim.optimizer import Optimizer
-from model_utils import get_main_model
+from test_utils import get_main_model
 
 class DumbJeopardyTest(pl.LightningModule):
     def __init__(self, main_model_path, parent_config, config, vocab_sz=None):
         super().__init__()
         self.save_hyperparameters()
         self.main_model = get_main_model(parent_config, main_model_path, vocab_sz)
+        self.main_model.freeze()
         
         self.op = config.optim_params
-        self.main_model.freeze()
         self.rnn = self.main_model.rnn
         self.i_h = self.main_model.i_h # learned embedding layer, was initialized to Glove Embeddings in pretrained task
 
@@ -33,13 +33,11 @@ class DumbJeopardyTest(pl.LightningModule):
         self.op = config.optim_params
         self.mp = config.model_params
         
-        # input_dim = self.mp.q_dim + self.mp.im_dim # 512, which happens to be same as post-pool dimension
-        input_dim = self.mp.q_dim + self.mp.im_dim
         self.n_hidden = self.mp.n_hidden # should be same as number of hidden layers in pretraining network
         self.h_o = self.main_model.h_o # outputs a 256 dim vector
         self.fine_tune_image = nn.Linear(512, self.mp.im_dim)
         
-        self.fine_tune = nn.Linear(input_dim, config.answer_classes + 1) # for the ones that don't fit any of the classes
+        self.fine_tune = nn.Linear(self.mp.q_dim, config.answer_classes + 1) # for the ones that don't fit any of the classes
             
         
     def forward(self, x):
@@ -77,8 +75,8 @@ class DumbJeopardyTest(pl.LightningModule):
         im_vector = self.forward_image(image)
         im_vector = im_vector.squeeze()
         # TODO: "element-wise product was FAR superior to a concatenation"
-        question_image_vector = torch.cat((f_q, im_vector), 1)
-        # question_image_vector = f_q * im_vector
+        # question_image_vector = torch.cat((f_q, im_vector), 1)
+        question_image_vector = f_q * im_vector
         # pass this through batchnorm, fcc, nonlinearity??
         logits = self(question_image_vector)
         # loss is just cross-entropy loss between answer and question_image vector   

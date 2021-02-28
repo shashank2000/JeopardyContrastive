@@ -1,6 +1,6 @@
 {
     "exp_base": "/mnt/fs5/shashank2000",
-    "exp_name": "coco_transfer_coco_final",
+    "exp_name": "coco_transfer_v3_cross",
     "cuda": true,
     "gpu_device": 0,
     "seed": 1337,

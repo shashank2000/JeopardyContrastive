@@ -11,7 +11,8 @@ python test_representation.py config/imagenettransfer.json /mnt/fs5/shashank2000
 python test_representation.py config/vqatest.json /mnt/fs5/shashank2000/experiments/final_jeop_model_correct_padding/checkpoints/epoch=199.ckpt 20541 config/finalcorrectjeop.json --gpu-device 7
 python test_representation.py config/dumbjeoptest.json /mnt/fs5/shashank2000/experiments/reverse_padding_jeopardy/checkpoints/epoch=199.ckpt 20541 config/finalcorrectjeop.json --gpu-device 2
 
-python test_representation.py config/dumbjeoptest.json /mnt/fs5/shashank2000/experiments/v3modelcross/checkpoints/epoch=199.ckpt 20541 config/v3modelcross.json --gpu-device 6
+python test_representation.py config/dumbjeoptest-addition.json /mnt/fs5/shashank2000/experiments/v3modelcross/checkpoints/epoch=199.ckpt 20541 config/v3modelcross.json --gpu-device 6
+python test_representation.py config/cocotransfer.json /mnt/fs5/shashank2000/experiments/v3modelcross/checkpoints/epoch=199.ckpt 20541 config/v3modelcross.json --gpu-device 6
 
 
 python test_representation.py config/cocotransferlars.json /home/ubuntu/checkpoints/experiments/BIGEC2lars_cosine_all_correct/checkpoints/epoch=198.ckpt 20541 config/pretraining_on_coco.json

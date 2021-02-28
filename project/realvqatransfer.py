@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from torch.optim import SGD
 import torch
 from loss_func.vqa_transfer_obj import VQATransferObjective
-from utils.model_utils import pretrain_optimizer
+from model_utils import pretrain_optimizer
 import torch.nn.functional as F
 
 def get_word(answer, pred, word_dict):

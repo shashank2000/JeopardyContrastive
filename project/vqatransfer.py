@@ -37,6 +37,7 @@ class DumbJeopardyTest(pl.LightningModule):
         self.h_o = self.main_model.h_o # outputs a 256 dim vector
         self.fine_tune_image = nn.Linear(512, self.mp.im_dim)
         
+        # TODO: why does this make any sense??
         self.fine_tune = nn.Linear(self.mp.q_dim, config.answer_classes + 1) # for the ones that don't fit any of the classes
             
         
@@ -75,8 +76,8 @@ class DumbJeopardyTest(pl.LightningModule):
         im_vector = self.forward_image(image)
         im_vector = im_vector.squeeze()
         # TODO: "element-wise product was FAR superior to a concatenation"
-        # question_image_vector = torch.cat((f_q, im_vector), 1)
-        question_image_vector = f_q * im_vector
+        question_image_vector = torch.cat((f_q, im_vector), 1)
+        # question_image_vector = f_q * im_vector
         # pass this through batchnorm, fcc, nonlinearity??
         logits = self(question_image_vector)
         # loss is just cross-entropy loss between answer and question_image vector   

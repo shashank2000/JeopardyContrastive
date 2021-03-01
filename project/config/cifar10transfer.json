@@ -6,7 +6,7 @@
     "seed": 1337,
     "optim_params": {
         "batch_size": 256,
-        "learning_rate": 0.01,
+        "learning_rate": 0.1,
         "momentum": 0.9,
         "weight_decay": 0
     },
@@ -22,5 +22,5 @@
     "mtype": "cifar10",
     "num_classes": 10,
     "dropout_p": 0.1,
-    "adam": true
+    "adam": false
 }

@@ -12,6 +12,7 @@ from baseline_data_module import BaselineDataModule
 from baseline_simclr import UpperBoundModel
 from jointobjective import JeopardyModelv2Joint
 from additionmodel import JeopardyAddModel
+from simsiam import SimSiamJeopardy
 import subprocess
 from PIL import ImageFile
 from pytorch_lightning.accelerators.ddp_accelerator import DDPAccelerator
@@ -81,6 +82,8 @@ def run(config_path, gpu_device=None):
             model = v3Model(dm.vl, config, num_samples=num_samples)
         elif config.system == "symmetric-jeopardy-cross":
             model = v3ModelCross(dm.vl, config, num_samples=num_samples)
+        elif config.system == "simsiam":
+            model = SimSiamJeopardy(config)
         else:
             model = JeopardyModel(dm.vl, config, num_samples=num_samples)
         eval_realtime_callback = RealTimeEvalCallback(config.checkpoint_dir, config.downstream_task_config, dm.vl, config_path, d2=my_d2)

@@ -43,7 +43,7 @@ class SimpleClassifierAdam(pl.LightningModule):
         super().__init__()
 
         # or load weights mapping all weights from GPU 1 to GPU 0 ...
-        self.main_model = get_main_model()
+        self.main_model = get_main_model(parent_config, main_model_path, vocab_sz)
         self.main_model.freeze()
         self.resnet = self.main_model.image_feature_extractor
         # confirm it is indeed frozen here

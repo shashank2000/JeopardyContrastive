@@ -51,3 +51,5 @@ from vqabaseline import BaselineVQA
 from vqatransfer import DumbJeopardyTest
 from realvqatransfer import NNJeopardyTest
 from baseline_data_module import BaselineDataModule
+from image_classifier_adam import SimpleClassifierAdam
+from image_classifier import SimpleClassifier

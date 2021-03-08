@@ -117,7 +117,7 @@ class JeopardyModel(pl.LightningModule):
             optimizer.step()
         else:
             optimizer.step(closure=optimizer_closure)
-
+            
     def configure_optimizers(self):
       # TODO: add exclude_bn_bias flag
       return pretrain_optimizer(self.parameters(), self.op.momentum, self.op.weight_decay, self.op.learning_rate, lars=True)

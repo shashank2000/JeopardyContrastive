@@ -3,6 +3,7 @@ from v2model import JeopardyModelv2
 from v3model import v3Model
 from v3modelcross import v3ModelCross
 from model import JeopardyModel
+from simsiam import SimSiamJeopardy
 
 def get_main_model(parent_config, main_model_path, vocab_sz):
     if parent_config.system == "inverse-jeopardy":
@@ -13,6 +14,8 @@ def get_main_model(parent_config, main_model_path, vocab_sz):
         main_model = v3Model.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
     elif parent_config.system == "symmetric-jeopardy-cross":
         main_model = v3ModelCross.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
+    elif parent_config.system == "simsiam":
+        main_model = SimSiamJeopardy.load_from_checkpoint(main_model_path, config=parent_config)    
     else:
         main_model = JeopardyModel.load_from_checkpoint(main_model_path, vocab_sz=vocab_sz, config=parent_config)
     return main_model

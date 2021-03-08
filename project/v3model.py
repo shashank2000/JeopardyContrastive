@@ -20,7 +20,7 @@ class v3Model(pl.LightningModule):
       (image+question) -> answer (negatives)
       (image+answer) -> question(negatives)
       (question+answer) -> image(negatives)
-
+      TODO: get rid of vocab_sz param in all models, I don't use it anymore
       '''
       super().__init__()
       self.save_hyperparameters()

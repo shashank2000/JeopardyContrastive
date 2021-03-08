@@ -11,8 +11,9 @@ def run(vocab_sz, checkpoint, config_path, hundred_epochs=False, parent_config=N
 
     ckpt_callback = pl.callbacks.ModelCheckpoint(
         dirpath=config.checkpoint_dir,
-        save_top_k=-1, # could be 5, and that would work fine
+        save_top_k=5, # could be 5, and that would work fine
         period=1,
+        monitor='train_loss'
     )
     
     num_epochs = config.num_epochs

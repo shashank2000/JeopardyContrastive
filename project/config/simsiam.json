@@ -1,29 +1,30 @@
 {
     "exp_base": "/mnt/fs5/shashank2000",
     "exp_name": "simsiam",
-    "run_name": "first run",
+    "run_name": "freeze embeddings cont",
     "downstream_task_config": "config/cifar100transfer.json",
     "system": "simsiam",
     "cuda": true,
     "seed": 1337,
     "model_params": {
-        "im_vec_dim": 128,
-        "ans_dim": 128,
+        "im_vec_dim": 256,
+        "ans_dim": 256,
         "question_dim": 256,
         "n_hidden": 300,
         "n_layers": 1,
-        "proj_hidden": 512,
-        "proj_output": 128,
+        "proj_hidden_dim": 2048,
+        "pred_hidden_dim": 512,
+        "out_dim": 2048,
         "threshold": 10
     },
     "optim_params": {
         "batch_size": 256,
         "learning_rate": 0.05,
         "momentum": 0.9,
-        "weight_decay": 1e-4
+        "weight_decay": 0.0001
     },
-    "num_workers": 8,
+    "num_workers": 16,
     "num_epochs": 200,
     "copy_checkpoint_freq": 5,
-    "continue_from_checkpoint": null
+    "continue_from_checkpoint": "/mnt/fs5/shashank2000/experiments/simsiam/checkpoints/epoch=119.ckpt"
 }

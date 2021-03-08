@@ -5,16 +5,19 @@ import torch.nn.functional as F
 
 class SimSiamSystem(nn.Module):
     def __init__(self, config, encoder):
+        super().__init__()
         # config is for dimension stuff
-        self.model = self.get_model()
         self.config = config
         self.encoder = encoder
+        self.model = self.get_model()
 
     def get_model(self):
         out_dim = self.config.model_params.out_dim
-        hid_dim = self.config.model_params.hidden_dim
-        model = SiameseArm(self.encoder, hid_dim, hid_dim, out_dim,
-                           posterior_head=self.config.model.posterior_head)
+        hid_dim_proj = self.config.model_params.proj_hidden_dim
+        hid_dim_pred = self.config.model_params.pred_hidden_dim
+        model = SiameseArm(
+            self.encoder, self.config.model_params.question_dim, 
+            hid_dim_proj, hid_dim_pred, out_dim)
         return model
 
     def forward(self, questions=None, images=None, answers=None):
@@ -34,6 +37,7 @@ class SimSiamSystem(nn.Module):
 
     def get_loss(self, batch, train=True, **kwargs):
         question, image, answer = batch
+        question = torch.stack(question)
         z1, h1 = self.forward(images=image, answers=answer)
         z2, h2 = self.forward(questions=question)
         loss = self.get_similarity(h1, z2) / 2 + self.get_similarity(h2, z1) / 2
@@ -60,12 +64,12 @@ class MLP(nn.Module):
 
 class SiameseArm(nn.Module):
 
-    def __init__(self, encoder, input_dim, hidden_size, output_dim):
+    def __init__(self, encoder, input_dim, proj_hidden, pred_hidden, output_dim):
         super().__init__()
         # if it sees image input, puts it through ResNet, else puts it through linear layer
-        self.encoder = encoder  
-        self.projector = MLP(input_dim, hidden_size, output_dim)
-        self.predictor = MLP(output_dim, hidden_size, output_dim)
+        self.projector = MLP(input_dim, proj_hidden, output_dim)
+        self.predictor = MLP(output_dim, pred_hidden, output_dim)
+        self.encoder = encoder
 
     def forward(self, images=None, answers=None, questions=None):
         y = self.encoder(images=images, answers=answers, questions=questions)

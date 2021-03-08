@@ -30,6 +30,7 @@ def pretrain_scheduler(learning_rate, train_iters_per_epoch, num_epochs, schedul
     # define LR schedule
     # returns evenly spaced numbers in the interval
     # scheduler_config would contain learning rate, batch_size, start_lr, final_lr, warmup_epochs
+    # is this equivalent to  lr *= 0.5 * (1. + math.cos(math.pi * epoch / args.epochs))
     start_lr = scheduler_config.start_lr
     final_lr = scheduler_config.final_lr
     warmup_epochs = scheduler_config.warmup_epochs
@@ -38,6 +39,7 @@ def pretrain_scheduler(learning_rate, train_iters_per_epoch, num_epochs, schedul
         start_lr, learning_rate, train_iters_per_epoch * warmup_epochs
     )
     iters = np.arange(train_iters_per_epoch * (num_epochs - warmup_epochs))
+
     cosine_lr_schedule = np.array([final_lr + 0.5 * (learning_rate - final_lr) * (
         1 + math.cos(math.pi * t / (train_iters_per_epoch * (num_epochs - warmup_epochs)))
     ) for t in iters])

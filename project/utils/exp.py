@@ -10,11 +10,14 @@ python test_representation.py config/vqatestbaseline.json /mnt/fs5/shashank2000/
 python test_representation.py config/imagenettransfer.json /mnt/fs5/shashank2000/experiments/lars_cosine_all_correct/checkpoints/epoch=199.ckpt 20541 config/pretraining_on_coco.json --gpu-device 9
 python test_representation.py config/vqatest.json /mnt/fs5/shashank2000/experiments/final_jeop_model_correct_padding/checkpoints/epoch=199.ckpt 20541 config/finalcorrectjeop.json --gpu-device 7
 python test_representation.py config/dumbjeoptest.json /mnt/fs5/shashank2000/experiments/reverse_padding_jeopardy/checkpoints/epoch=199.ckpt 20541 config/finalcorrectjeop.json --gpu-device 2
+python test_representation.py config/dumbjeoptest.json /mnt/fs5/shashank2000/experiments/simsiam/checkpoints/epoch=58.ckpt 20541 config/finalcorrectjeop.json --gpu-device 7
 
 python test_representation.py config/dumbjeoptest-addition.json /mnt/fs5/shashank2000/experiments/v3modelcross/checkpoints/epoch=199.ckpt 20541 config/v3modelcross.json --gpu-device 6
-python test_representation.py config/cocotransfer.json /mnt/fs5/shashank2000/experiments/v3modelcross/checkpoints/epoch=199.ckpt 20541 config/v3modelcross.json --gpu-device 2
+python test_representation.py config/cocotransfer.json /mnt/fs5/shashank2000/experiments/simsiam/checkpoints/epoch=68-v0.ckpt 20541 config/simsiam.json --gpu-device 2 # the one that's there is yes freeze embeddings
+python test_representation.py config/imagenetmocoparams.json /mnt/fs5/shashank2000/experiments/simsiam/checkpoints/epoch=68-v0.ckpt 20541 config/simsiam.json --gpu-device 2
+python test_representation.py config/dumbjeoptest.json /mnt/fs5/shashank2000/experiments/simsiam/checkpoints/epoch=68-v0.ckpt 20541 config/simsiam.json --gpu-device 8
 
-python test_representation.py config/cifar10transfer.json /mnt/fs5/shashank2000/experiments/v3model/checkpoints/epoch=199.ckpt 20541 config/v3model.json --gpu-device 2
+python test_representation.py config/imagenettransfer.json /mnt/fs5/shashank2000/experiments/v3model/checkpoints/epoch=199.ckpt 20541 config/v3model.json --gpu-device 0
 
 python test_representation.py config/cocotransferlars.json /home/ubuntu/checkpoints/experiments/BIGEC2lars_cosine_all_correct/checkpoints/epoch=198.ckpt 20541 config/pretraining_on_coco.json
 python test_representation.py config/cocotransferlars.json /home/ubuntu/checkpoints/experiments/ec2_final_jeop_model_correct_padding/checkpoints/epoch=197.ckpt 20541 config/finalcorrectjeop.json

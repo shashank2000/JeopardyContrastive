@@ -1,7 +1,7 @@
 {
     "exp_base": "/mnt/fs5/shashank2000",
     "exp_name": "imagenet_transfer",
-    "run_name": "larsfalse",
+    "run_name": "v3 model cross",
     "cuda": true,
     "gpu_device": 0,
     "seed": 1337,
@@ -17,9 +17,9 @@
         "warmup_epochs": 10
     },
     "num_epochs": 90,
-    "num_workers": 8,
+    "num_workers": 16,
     "copy_checkpoint_freq": 5,
-    "continue_from_checkpoint": null,
+    "continue_from_checkpoint": "/mnt/fs5/shashank2000/experiments/imagenet_transfer/checkpoints/epoch=61-v2.ckpt",
     "mtype": "imagenet",
     "num_classes": 1000,
     "dropout_p": 0.1

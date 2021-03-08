@@ -1,6 +1,6 @@
 {
     "exp_base": "/mnt/fs5/shashank2000",
-    "exp_name": "coco_transfer_simsiam_moco_params",
+    "exp_name": "imagenet_moco_params",
     "cuda": true,
     "gpu_device": 0,
     "seed": 1337,
@@ -10,16 +10,10 @@
         "weight_decay": 0,
         "momentum": 0.9
     },
-    "scheduler_params": {
-        "start_lr": 0,
-        "final_lr": 0,
-        "warmup_epochs": 10
-    },
-    "num_epochs": 90,
+    "num_epochs": 100,
     "num_workers": 16,
     "copy_checkpoint_freq": 5,
     "continue_from_checkpoint": null,
-    "mtype": "coco",
-    "num_classes": 80,
-    "dropout_p": 0.1
+    "mtype": "imagenet",
+    "num_classes": 1000
 }

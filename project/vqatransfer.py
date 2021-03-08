@@ -26,7 +26,6 @@ class DumbJeopardyTest(pl.LightningModule):
         self.resnet = self.main_model.image_feature_extractor
 
         self.resnet = nn.Sequential(*list(self.resnet.children())[:-1])
-        
         self.test_accuracy =  pl.metrics.Accuracy()
         self.train_accuracy = pl.metrics.Accuracy() # to check for overfitting!
         self.top_k_accuracy = pl.metrics.Accuracy()
@@ -38,7 +37,7 @@ class DumbJeopardyTest(pl.LightningModule):
         self.fine_tune_image = nn.Linear(512, self.mp.im_dim)
         
         # TODO: why does this make any sense??
-        self.fine_tune = nn.Linear(self.mp.q_dim, config.answer_classes + 1) # for the ones that don't fit any of the classes
+        self.fine_tune = nn.Linear(self.mp.q_dim*2, config.answer_classes + 1) # for the ones that don't fit any of the classes
             
         
     def forward(self, x):

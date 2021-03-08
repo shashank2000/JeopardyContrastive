@@ -15,7 +15,7 @@ python test_representation.py config/dumbjeoptest.json /mnt/fs5/shashank2000/exp
 python test_representation.py config/dumbjeoptest-addition.json /mnt/fs5/shashank2000/experiments/v3modelcross/checkpoints/epoch=199.ckpt 20541 config/v3modelcross.json --gpu-device 6
 python test_representation.py config/cocotransfer.json /mnt/fs5/shashank2000/experiments/simsiam/checkpoints/epoch=68-v0.ckpt 20541 config/simsiam.json --gpu-device 2 # the one that's there is yes freeze embeddings
 python test_representation.py config/imagenetmocoparams.json /mnt/fs5/shashank2000/experiments/simsiam/checkpoints/epoch=68-v0.ckpt 20541 config/simsiam.json --gpu-device 2
-python test_representation.py config/dumbjeoptest.json /mnt/fs5/shashank2000/experiments/simsiam/checkpoints/epoch=68-v0.ckpt 20541 config/simsiam.json --gpu-device 8
+python test_representation.py config/dumbjeoptest.json /home/ubuntu/checkpoints/simsiamcheckpoint 20541 config/simsiam.json --gpu-device 0
 
 python test_representation.py config/imagenettransfer.json /mnt/fs5/shashank2000/experiments/v3model/checkpoints/epoch=199.ckpt 20541 config/v3model.json --gpu-device 0
 
